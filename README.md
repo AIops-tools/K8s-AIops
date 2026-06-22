@@ -79,6 +79,10 @@ See `skills/k8s-aiops/SKILL.md` and `SECURITY.md` for details.
 | Hypervisor VM lifecycle | a hypervisor ops skill |
 | Backup & restore | a backup ops skill |
 
+## Contributing & feature requests
+
+This is a preview — coverage is intentionally focused. **Missing a device, action, or feature you need?** Open an issue or pull request at [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops/issues) — feature requests, contributions, and comments are all welcome.
+
 ## License
 
 MIT — [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops)
