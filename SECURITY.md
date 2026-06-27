@@ -28,15 +28,26 @@ be owner-only (`chmod 700`); the skill warns if it is more permissive.
 
 ### Destructive Operation Safety
 
-Write operations (scale, rollout restart, delete pod, delete deployment, cordon)
-all pass through the bundled `@governed_tool` decorator: policy pre-check, token /
-runaway budget guard, graduated-autonomy risk-tier gate, and audit logging. The CLI
-layer additionally requires double confirmation and supports `--dry-run` for the
-most destructive commands (deployment delete, pod delete, node cordon). Reversible
-writes record an inverse undo descriptor — `scale_deployment` records a scale-back to
-the previous replica count; `cordon_node` ↔ `uncordon_node` are mutual inverses.
-`delete_pod`, `delete_deployment`, and `rollout_restart_deployment` declare no undo;
-`delete_deployment` is tagged `risk_level=high`.
+Write operations (scale, rollout restart/undo/pause/resume, set image, delete
+pod/deployment/job, create/delete namespace, cordon/uncordon/drain) all pass through
+the bundled `@governed_tool` decorator: policy pre-check, token / runaway budget
+guard, graduated-autonomy risk-tier gate, and audit logging. The CLI layer
+additionally requires double confirmation and supports `--dry-run` for the most
+destructive commands (deployment/job/namespace delete, node cordon/drain, rollout
+undo). Reversible writes record an inverse undo descriptor — `scale_deployment` /
+`scale_statefulset` record a scale-back to the previous replica count;
+`set_deployment_image` restores the previous image; `cordon_node` ↔ `uncordon_node`
+and `rollout_pause` ↔ `rollout_resume` are mutual inverses; `create_namespace` ↔
+`delete_namespace`. `delete_*` and `rollout_undo_deployment` declare no undo.
+`risk_level=high`: `delete_deployment`, `delete_job`, `delete_namespace`,
+`drain_node`, `rollout_undo_deployment`.
+
+### Secret Confidentiality
+
+`secret_list` returns secret names, types, and key NAMES only — secret VALUES are
+never read, returned, or logged, and there is deliberately no tool that returns
+secret values. ConfigMap values (non-secret configuration) are returned by
+`configmap_get`.
 
 ### Least Privilege
 

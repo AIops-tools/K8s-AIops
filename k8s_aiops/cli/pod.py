@@ -15,7 +15,7 @@ from k8s_aiops.cli._common import (
     dry_run_print,
     get_connection,
 )
-from k8s_aiops.ops import lifecycle, workloads
+from k8s_aiops.ops import describe, lifecycle, workloads
 
 pod_app = typer.Typer(help="Pod operations.", no_args_is_help=True)
 console = Console()
@@ -45,6 +45,27 @@ def pod_get(name: str, target: TargetOption = None, namespace: NamespaceOption =
     conn, _ = get_connection(target)
     for k, v in workloads.get_pod(conn, name, namespace).items():
         console.print(f"  [cyan]{k}:[/] {v}")
+
+
+@pod_app.command("describe")
+@cli_errors
+def pod_describe(
+    name: str, target: TargetOption = None, namespace: NamespaceOption = None
+) -> None:
+    """Describe a pod: status, conditions, container states, recent events."""
+    conn, _ = get_connection(target)
+    result = describe.pod_describe(conn, name, namespace)
+    for k in ("name", "namespace", "phase", "node", "pod_ip"):
+        console.print(f"  [cyan]{k}:[/] {result[k]}")
+    console.print("  [cyan]containers:[/]")
+    for c in result["containers"]:
+        console.print(
+            f"    - {c['name']} ready={c['ready']} restarts={c['restarts']} "
+            f"state={c['state']}"
+        )
+    console.print("  [cyan]events:[/]")
+    for e in result["events"]:
+        console.print(f"    - {e['type']} {e['reason']}: {e['message']} ({e['age']})")
 
 
 @pod_app.command("logs")

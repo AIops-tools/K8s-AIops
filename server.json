@@ -2,17 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.AIops-tools/k8s-aiops",
   "title": "k8s AIops",
-  "description": "Governed Kubernetes ops — 15 MCP tools with audit, budget, undo guards.",
+  "description": "Governed Kubernetes ops — 51 MCP tools with audit, budget, undo, risk-tier guards.",
   "repository": {
     "url": "https://github.com/AIops-tools/K8s-AIops",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "k8s-aiops",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       }

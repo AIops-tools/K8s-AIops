@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     dry_run_print,
     get_connection,
 )
-from k8s_aiops.ops import lifecycle, nodes
+from k8s_aiops.ops import describe, lifecycle, nodes
 
 node_app = typer.Typer(help="Node operations.", no_args_is_help=True)
 console = Console()
@@ -35,6 +35,40 @@ def node_list(target: TargetOption = None) -> None:
             str(r["schedulable"]), r["age"],
         )
     console.print(table)
+
+
+@node_app.command("describe")
+@cli_errors
+def node_describe(name: str, target: TargetOption = None) -> None:
+    """Describe a node: capacity, allocatable, conditions, taints."""
+    conn, _ = get_connection(target)
+    result = describe.node_describe(conn, name)
+    for k in ("name", "schedulable", "age"):
+        console.print(f"  [cyan]{k}:[/] {result[k]}")
+    console.print(f"  [cyan]capacity:[/] {result['capacity']}")
+    console.print(f"  [cyan]allocatable:[/] {result['allocatable']}")
+    console.print(f"  [cyan]taints:[/] {result['taints']}")
+    console.print("  [cyan]conditions:[/]")
+    for c in result["conditions"]:
+        console.print(f"    - {c['type']}={c['status']} {c['reason']}")
+
+
+@node_app.command("drain")
+@cli_errors
+def node_drain(
+    name: str, target: TargetOption = None, dry_run: DryRunOption = False
+) -> None:
+    """Cordon a node and evict its pods (HIGH RISK — double confirm)."""
+    if dry_run:
+        dry_run_print(operation="drain_node", detail=f"cordon + evict pods on {name}")
+        return
+    double_confirm("drain", f"node {name}")
+    conn, _ = get_connection(target)
+    result = lifecycle.drain_node(conn, name)
+    console.print(
+        f"[green]Drained node {name}[/] — evicted {len(result['evicted'])}, "
+        f"skipped {len(result['skipped'])}"
+    )
 
 
 @node_app.command("cordon")

@@ -24,3 +24,16 @@ def list_namespaces(conn: Any) -> list[dict]:
             }
         )
     return out
+
+
+def create_namespace(conn: Any, name: str) -> dict:
+    """[WRITE] Create a namespace. Inverse: delete_namespace."""
+    body = {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": name}}
+    call(conn.core.create_namespace, body, path="namespaces")
+    return {"name": sanitize(name, 128), "action": "created"}
+
+
+def delete_namespace(conn: Any, name: str) -> dict:
+    """[WRITE] Delete a namespace and EVERYTHING in it. HIGH RISK — no undo."""
+    call(conn.core.delete_namespace, name, path=f"namespaces/{name}")
+    return {"name": sanitize(name, 128), "action": "deleted"}

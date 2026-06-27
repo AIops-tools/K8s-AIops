@@ -7,4 +7,4 @@ skill-family dependency. Works with any kubeconfig-reachable cluster
 (standard Kubernetes, k3s, EKS, GKE, AKS). Preview: not yet full-coverage.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

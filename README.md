@@ -8,10 +8,14 @@
 > [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops) under
 > the MIT license.
 
-Governed Kubernetes operations for AI agents — **15 MCP tools**, every one wrapped
+Governed Kubernetes operations for AI agents — **51 MCP tools**, every one wrapped
 with the bundled `@governed_tool` harness: a local unified audit log under
 `~/.k8s-aiops/`, policy engine, token/runaway budget guard, undo-token recording, and
-graduated-autonomy risk tiers.
+graduated-autonomy risk tiers. Coverage spans pods, deployments, statefulsets,
+daemonsets, replicasets, jobs/cronjobs, services, ingresses, endpoints,
+configmaps, secrets (names/keys only), PVCs/PVs/storageclasses, nodes, namespaces,
+events, rollouts (status/history/undo/pause/resume/set-image), pod/node describe,
+pod/node top, and a cluster health summary.
 
 > **Standalone**: the governance harness is bundled in the package
 > (`k8s_aiops.governance`) — k8s-aiops has no external skill-family dependency.
@@ -28,7 +32,10 @@ plugins) is delegated entirely to the kubeconfig.
 ```bash
 uv tool install k8s-aiops
 
-# Uses your current kube-context out of the box:
+# Friendly onboarding wizard — registers your kube contexts as named targets:
+k8s-aiops init
+
+# Or skip it — uses your current kube-context out of the box:
 k8s-aiops doctor
 k8s-aiops pod list
 k8s-aiops deployment list -n default

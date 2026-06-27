@@ -110,6 +110,11 @@ class K8sConnection:
             "api_client": api_client,
             "core": k8s_client.CoreV1Api(api_client),
             "apps": k8s_client.AppsV1Api(api_client),
+            "batch": k8s_client.BatchV1Api(api_client),
+            "networking": k8s_client.NetworkingV1Api(api_client),
+            "storage": k8s_client.StorageV1Api(api_client),
+            "custom": k8s_client.CustomObjectsApi(api_client),
+            "apis": k8s_client.ApisApi(api_client),
             "version": k8s_client.VersionApi(api_client),
         }
 
@@ -126,6 +131,31 @@ class K8sConnection:
     def apps(self) -> Any:
         """AppsV1Api — deployments, replicasets, statefulsets."""
         return self._apis["apps"]
+
+    @property
+    def batch(self) -> Any:
+        """BatchV1Api — jobs and cronjobs."""
+        return self._apis["batch"]
+
+    @property
+    def networking(self) -> Any:
+        """NetworkingV1Api — ingresses, network policies."""
+        return self._apis["networking"]
+
+    @property
+    def storage(self) -> Any:
+        """StorageV1Api — storage classes."""
+        return self._apis["storage"]
+
+    @property
+    def custom(self) -> Any:
+        """CustomObjectsApi — metrics.k8s.io (pod/node top) and CRDs."""
+        return self._apis["custom"]
+
+    @property
+    def apis(self) -> Any:
+        """ApisApi — API group discovery (api_resources)."""
+        return self._apis["apis"]
 
     @property
     def version(self) -> Any:

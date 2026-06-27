@@ -126,3 +126,57 @@ def cordon_node(conn: Any, name: str) -> dict:
 def uncordon_node(conn: Any, name: str) -> dict:
     """[WRITE] Mark a node schedulable again. Inverse: cordon_node."""
     return _set_node_unschedulable(conn, name, False)
+
+
+def _is_daemonset_pod(pod: Any) -> bool:
+    owners = pod.metadata.owner_references or []
+    return any(o.kind == "DaemonSet" for o in owners)
+
+
+def _is_mirror_pod(pod: Any) -> bool:
+    return "kubernetes.io/config.mirror" in (pod.metadata.annotations or {})
+
+
+def drain_node(conn: Any, name: str) -> dict:
+    """[WRITE] Cordon a node and evict its pods. HIGH RISK — no full undo.
+
+    Cordons first (so nothing new schedules), then evicts each pod via the
+    eviction API (respecting PodDisruptionBudgets). DaemonSet-managed and mirror
+    pods are skipped, matching ``kubectl drain`` defaults. The cordon is
+    reversible via uncordon; the evictions are not.
+    """
+    _set_node_unschedulable(conn, name, True)
+    pods = call(
+        conn.core.list_pod_for_all_namespaces,
+        field_selector=f"spec.nodeName={name}",
+        path="pods",
+    )
+    evicted: list[str] = []
+    skipped: list[str] = []
+    for pod in pods.items or []:
+        pod_name = pod.metadata.name
+        ns = pod.metadata.namespace
+        ref = f"{ns}/{pod_name}"
+        if _is_daemonset_pod(pod) or _is_mirror_pod(pod):
+            skipped.append(sanitize(ref, 128))
+            continue
+        body = {
+            "apiVersion": "policy/v1",
+            "kind": "Eviction",
+            "metadata": {"name": pod_name, "namespace": ns},
+        }
+        call(
+            conn.core.create_namespaced_pod_eviction,
+            pod_name,
+            ns,
+            body,
+            path=f"pods/{pod_name}/eviction",
+        )
+        evicted.append(sanitize(ref, 128))
+    return {
+        "name": sanitize(name, 128),
+        "cordoned": True,
+        "evicted": evicted,
+        "skipped": skipped,
+        "action": "drained",
+    }

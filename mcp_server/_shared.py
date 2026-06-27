@@ -77,11 +77,17 @@ mcp = FastMCP(
     instructions=(
         "Governed Kubernetes operations (preview). Works with any cluster a "
         "kubeconfig can reach — standard Kubernetes, k3s, EKS, GKE, AKS. Read "
-        "tools: list/get pods, deployments, services, nodes, namespaces, events, "
-        "and pod logs. Write tools: scale and rollout-restart deployments, delete "
-        "pods/deployments, cordon/uncordon nodes. A 'target' selects a kube "
-        "context from config. Every tool runs through the k8s-aiops governance "
-        "harness (audit / budget / risk-tier / undo)."
+        "tools cover pods, deployments, statefulsets, daemonsets, replicasets, "
+        "jobs, cronjobs, services, ingresses, endpoints, configmaps, secrets "
+        "(names/keys only — values are never returned), PVCs/PVs/storageclasses, "
+        "nodes, namespaces, events, pod logs, pod/node describe, rollout "
+        "status/history, pod/node top (metrics-server), and a cluster_info health "
+        "summary. Write tools: scale deployments/statefulsets, rollout "
+        "restart/undo/pause/resume, set deployment image, delete "
+        "pods/deployments/jobs, create/delete namespaces, and cordon/uncordon/drain "
+        "nodes. A 'target' selects a kube context from config. Every tool runs "
+        "through the k8s-aiops governance harness (audit / budget / risk-tier / "
+        "undo)."
     ),
 )
 

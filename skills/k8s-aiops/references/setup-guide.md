@@ -26,7 +26,14 @@ k8s-aiops pod list
 
 ### Named targets (multiple clusters)
 
-Create `~/.k8s-aiops/config.yaml` to give contexts friendly names:
+The fastest way is the interactive wizard, which discovers the contexts in your
+kubeconfig and registers the ones you pick (writing `config.yaml`, dir chmod 700):
+
+```bash
+k8s-aiops init
+```
+
+Or create `~/.k8s-aiops/config.yaml` by hand to give contexts friendly names:
 
 ```yaml
 targets:

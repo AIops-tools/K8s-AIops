@@ -5,12 +5,22 @@ from __future__ import annotations
 import typer
 
 from k8s_aiops.cli._common import NamespaceOption, TargetOption, cli_errors
+from k8s_aiops.cli.cluster import api_resources_cmd, cluster_info_cmd
+from k8s_aiops.cli.configmap import configmap_app, secret_app
+from k8s_aiops.cli.daemonset import daemonset_app
 from k8s_aiops.cli.deployment import deployment_app
 from k8s_aiops.cli.doctor import doctor_cmd
+from k8s_aiops.cli.ingress import ingress_app
+from k8s_aiops.cli.init import init_cmd
+from k8s_aiops.cli.job import cronjob_app, job_app
 from k8s_aiops.cli.namespace import namespace_app
 from k8s_aiops.cli.node import node_app
 from k8s_aiops.cli.pod import pod_app
+from k8s_aiops.cli.rollout import rollout_app
 from k8s_aiops.cli.service import service_app
+from k8s_aiops.cli.statefulset import statefulset_app
+from k8s_aiops.cli.storage import storage_app
+from k8s_aiops.cli.top import top_app
 
 app = typer.Typer(
     name="k8s-aiops",
@@ -20,10 +30,23 @@ app = typer.Typer(
 
 app.add_typer(pod_app, name="pod")
 app.add_typer(deployment_app, name="deployment")
+app.add_typer(statefulset_app, name="statefulset")
+app.add_typer(daemonset_app, name="daemonset")
+app.add_typer(job_app, name="job")
+app.add_typer(cronjob_app, name="cronjob")
 app.add_typer(service_app, name="service")
+app.add_typer(ingress_app, name="ingress")
+app.add_typer(configmap_app, name="configmap")
+app.add_typer(secret_app, name="secret")
+app.add_typer(storage_app, name="storage")
+app.add_typer(rollout_app, name="rollout")
+app.add_typer(top_app, name="top")
 app.add_typer(node_app, name="node")
 app.add_typer(namespace_app, name="namespace")
+app.command("init")(init_cmd)
 app.command("doctor")(doctor_cmd)
+app.command("cluster-info")(cluster_info_cmd)
+app.command("api-resources")(api_resources_cmd)
 
 
 @app.command("events")
