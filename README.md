@@ -74,9 +74,18 @@ No secrets live in this file — credentials come from the kubeconfig.
   scale-back to previous; `cordon_node` ↔ `uncordon_node`).
 - `delete_deployment` is `risk_level=high`; CLI destructive commands require double
   confirmation and support `--dry-run`.
-- All API text passes through `sanitize()` (prompt-injection defense).
+- All API text passes through `sanitize()` (output hygiene: control/format-char
+  stripping + truncation).
 
 See `skills/k8s-aiops/SKILL.md` and `SECURITY.md` for details.
+
+## Secrets
+
+k8s-aiops deliberately has **no encrypted secret store** (no `secrets.enc`, no
+`secret` CLI): authentication is delegated entirely to your kubeconfig — client
+certificates, bearer tokens, or exec plugins (EKS/GKE/AKS) — and the tool never
+handles or stores cluster credentials itself. This is a documented exception to
+the AIops-tools line-wide encrypted-secret-store pattern.
 
 ## Companion Skills
 

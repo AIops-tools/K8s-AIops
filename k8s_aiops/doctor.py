@@ -86,8 +86,10 @@ def run_doctor(skip_auth: bool = False) -> int:
     mgr = ConnectionManager(config)
     for target in config.targets:
         try:
+            from k8s_aiops.ops._shared import _REQUEST_TIMEOUT
+
             conn = mgr.connect(target.name)
-            ver = conn.version.get_code()
+            ver = conn.version.get_code(_request_timeout=_REQUEST_TIMEOUT)
             _console.print(
                 f"[green]✓ Reachable '{target.name}' "
                 f"(server {ver.git_version})[/]"

@@ -15,6 +15,7 @@ from kubernetes.client.exceptions import ApiException
 
 from k8s_aiops.connection import translate_api_error
 from k8s_aiops.governance import sanitize
+from k8s_aiops.ops._shared import _REQUEST_TIMEOUT
 
 _GROUP = "metrics.k8s.io"
 _VERSION = "v1beta1"
@@ -40,7 +41,9 @@ def node_top(conn: Any) -> dict:
     absent rather than raising.
     """
     try:
-        data = conn.custom.list_cluster_custom_object(_GROUP, _VERSION, "nodes")
+        data = conn.custom.list_cluster_custom_object(
+            _GROUP, _VERSION, "nodes", _request_timeout=_REQUEST_TIMEOUT
+        )
     except ApiException as exc:
         if getattr(exc, "status", None) in _ABSENT_CODES:
             return _absent(getattr(exc, "reason", "") or "")
@@ -65,10 +68,12 @@ def pod_top(conn: Any, namespace: str | None = None) -> dict:
     try:
         if namespace:
             data = conn.custom.list_namespaced_custom_object(
-                _GROUP, _VERSION, namespace, "pods"
+                _GROUP, _VERSION, namespace, "pods", _request_timeout=_REQUEST_TIMEOUT
             )
         else:
-            data = conn.custom.list_cluster_custom_object(_GROUP, _VERSION, "pods")
+            data = conn.custom.list_cluster_custom_object(
+                _GROUP, _VERSION, "pods", _request_timeout=_REQUEST_TIMEOUT
+            )
     except ApiException as exc:
         if getattr(exc, "status", None) in _ABSENT_CODES:
             return _absent(getattr(exc, "reason", "") or "")

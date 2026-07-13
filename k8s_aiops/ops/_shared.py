@@ -15,9 +15,18 @@ from kubernetes.client.exceptions import ApiException
 
 from k8s_aiops.connection import translate_api_error
 
+# Default network timeout (seconds) for every Kubernetes API call. Without it
+# the client can hang indefinitely on an unresponsive apiserver; callers may
+# still pass an explicit ``_request_timeout`` to override per call.
+_REQUEST_TIMEOUT = 30
+
 
 def call(fn: Callable[..., Any], *args: Any, path: str = "", **kwargs: Any) -> Any:
-    """Invoke a kubernetes-client method, translating ApiException centrally."""
+    """Invoke a kubernetes-client method, translating ApiException centrally.
+
+    Applies the default ``_request_timeout`` unless the caller provided one.
+    """
+    kwargs.setdefault("_request_timeout", _REQUEST_TIMEOUT)
     try:
         return fn(*args, **kwargs)
     except ApiException as exc:

@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.3.0 — 2026-07-13
+
+Security-hardening release from a line-wide code review.
+
+### Changed (behavior)
+- **Secure by default**: with no `rules.yaml`, high/critical operations now require a
+  named approver (`K8S_AUDIT_APPROVED_BY`). A fresh install no longer allows
+  destructive writes unattended; `init` seeds a starter `rules.yaml` you can edit,
+  and an operator-authored rules file is honoured as-is.
+- `__version__` is now single-sourced from package metadata (the previous release
+  self-reported a stale version string).
+- Sanitize docs no longer overstate scope: it strips control/format characters and
+  truncates; semantic prompt-injection resistance must come from the consuming agent.
+
+### Fixed
+- Kubernetes API calls now carry `_request_timeout=30` (hung apiserver can no longer block the agent indefinitely).
+- README documents the deliberate no-encrypted-secret-store exception (kubeconfig-delegated auth).
+
+### Tests
+- Governance persistence is now tested against REAL `audit.db`/`undo.db` files
+  (write → audit row + inverse undo row with captured prior state).
+- The CLI confirmed-write path (dry-run / double-confirm / governed execution) is
+  covered end-to-end.
+- `pytest-cov` added to the dev dependencies.
+
 ## v0.2.1
 
 - Fix: `K8S_AIOPS_HOME` now also relocates `config.yaml` (was hardcoded to `~/.k8s-aiops`).

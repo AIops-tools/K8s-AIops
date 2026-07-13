@@ -1,7 +1,7 @@
 """Read-only workload operations: pods, deployments, services, events, logs.
 
 All API-returned text is run through ``sanitize()`` before reaching the caller
-(prompt-injection defense). Returns are high-signal summaries, not full blobs.
+(output hygiene). Returns are high-signal summaries, not full blobs.
 Listing is namespace-scoped when a namespace is given, otherwise all-namespaces.
 """
 

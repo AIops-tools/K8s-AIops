@@ -51,7 +51,7 @@ def cli_errors(fn: Callable) -> Callable:
     return wrapper
 
 
-def get_connection(target: str | None, config_path: Path | None = None):
+def get_connection(target: str | None, config_path: Path | None = None) -> tuple[Any, Any]:
     """Return a (conn, config) tuple for the given target."""
     from k8s_aiops.config import load_config
     from k8s_aiops.connection import ConnectionManager

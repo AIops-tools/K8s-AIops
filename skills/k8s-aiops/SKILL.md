@@ -97,7 +97,7 @@ k8s-aiops doctor          # or skip init — works with your current kube-contex
 
 | Scenario | Recommended | Why |
 |----------|:-----------:|-----|
-| Local/small models (Ollama, Qwen) | **CLI** | fewer tokens than MCP |
+| Local/small models | **CLI** | fewer tokens than MCP |
 | Cloud models (Claude, GPT) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | type-safe parameters, audited |
 
