@@ -190,6 +190,7 @@ The object changed concurrently (or already exists). Re-read it and retry the wr
 All operations are automatically audited via the bundled `@governed_tool` decorator (`k8s_aiops.governance`):
 - Every tool call logged to `~/.k8s-aiops/audit.db` (local SQLite audit DB; relocate with `K8S_AIOPS_HOME`)
 - Policy rules enforced via `~/.k8s-aiops/rules.yaml` (deny rules, maintenance windows, risk tiers)
+- **Secure by default (v0.3.0+)**: with no `~/.k8s-aiops/rules.yaml`, high/critical operations are denied unless `K8S_AUDIT_APPROVED_BY` names an approver (set `K8S_AUDIT_RATIONALE` too). `k8s-aiops init` seeds a starter rules.yaml; an operator-authored rules file is honoured as-is.
 - Budget / runaway guard caps cumulative tool calls and wall-time, and trips on tight poll/retry loops
 - Undo store records inverse descriptors for reversible writes (scale → previous replicas; cordon ↔ uncordon)
 - Graduated-autonomy risk tiers gate write operations (require a recorded approver for the highest tiers)
