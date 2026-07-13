@@ -16,7 +16,9 @@ from pathlib import Path
 
 import yaml
 
-CONFIG_DIR = Path.home() / ".k8s-aiops"
+from k8s_aiops.governance.paths import ops_home
+
+CONFIG_DIR = ops_home()
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 
 _log = logging.getLogger("k8s-aiops.config")

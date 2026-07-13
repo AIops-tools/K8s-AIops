@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -14,7 +16,8 @@ from k8s_aiops.cli._common import (
     dry_run_print,
     get_connection,
 )
-from k8s_aiops.ops import describe, lifecycle, nodes
+from k8s_aiops.ops import describe, nodes
+from mcp_server.tools import nodes as gov
 
 node_app = typer.Typer(help="Node operations.", no_args_is_help=True)
 console = Console()
@@ -63,12 +66,7 @@ def node_drain(
         dry_run_print(operation="drain_node", detail=f"cordon + evict pods on {name}")
         return
     double_confirm("drain", f"node {name}")
-    conn, _ = get_connection(target)
-    result = lifecycle.drain_node(conn, name)
-    console.print(
-        f"[green]Drained node {name}[/] — evicted {len(result['evicted'])}, "
-        f"skipped {len(result['skipped'])}"
-    )
+    console.print_json(json.dumps(gov.drain_node(name=name, target=target)))
 
 
 @node_app.command("cordon")
@@ -81,15 +79,11 @@ def node_cordon(
         dry_run_print(operation="cordon_node", detail=f"cordon node {name}")
         return
     double_confirm("cordon", f"node {name}")
-    conn, _ = get_connection(target)
-    lifecycle.cordon_node(conn, name)
-    console.print(f"[green]Cordoned node {name}[/]")
+    console.print_json(json.dumps(gov.cordon_node(name=name, target=target)))
 
 
 @node_app.command("uncordon")
 @cli_errors
 def node_uncordon(name: str, target: TargetOption = None) -> None:
     """Mark a node schedulable again."""
-    conn, _ = get_connection(target)
-    lifecycle.uncordon_node(conn, name)
-    console.print(f"[green]Uncordoned node {name}[/]")
+    console.print_json(json.dumps(gov.uncordon_node(name=name, target=target)))

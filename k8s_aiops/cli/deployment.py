@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -15,7 +17,8 @@ from k8s_aiops.cli._common import (
     dry_run_print,
     get_connection,
 )
-from k8s_aiops.ops import lifecycle, workloads
+from k8s_aiops.ops import workloads
+from mcp_server.tools import lifecycle as gov
 
 deployment_app = typer.Typer(help="Deployment operations.", no_args_is_help=True)
 console = Console()
@@ -58,11 +61,12 @@ def deployment_scale(
     namespace: NamespaceOption = None,
 ) -> None:
     """Scale a deployment to a replica count."""
-    conn, _ = get_connection(target)
-    result = lifecycle.scale_deployment(conn, name, replicas, namespace)
-    console.print(
-        f"[green]Scaled {name} -> {replicas}[/] "
-        f"(was {result['previous_replicas']})"
+    console.print_json(
+        json.dumps(
+            gov.scale_deployment(
+                name=name, replicas=replicas, namespace=namespace, target=target
+            )
+        )
     )
 
 
@@ -72,9 +76,11 @@ def deployment_restart(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:
     """Trigger a rolling restart of a deployment."""
-    conn, _ = get_connection(target)
-    lifecycle.rollout_restart_deployment(conn, name, namespace)
-    console.print(f"[green]Rollout restart triggered for {name}[/]")
+    console.print_json(
+        json.dumps(
+            gov.rollout_restart_deployment(name=name, namespace=namespace, target=target)
+        )
+    )
 
 
 @deployment_app.command("delete")
@@ -90,6 +96,6 @@ def deployment_delete(
         dry_run_print(operation="delete_deployment", detail=f"delete deployment {name}")
         return
     double_confirm("delete", f"deployment {name}")
-    conn, _ = get_connection(target)
-    lifecycle.delete_deployment(conn, name, namespace)
-    console.print(f"[green]Deleted deployment {name}[/]")
+    console.print_json(
+        json.dumps(gov.delete_deployment(name=name, namespace=namespace, target=target))
+    )

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -16,6 +18,7 @@ from k8s_aiops.cli._common import (
     get_connection,
 )
 from k8s_aiops.ops import rollout
+from mcp_server.tools import rollout as gov
 
 rollout_app = typer.Typer(help="Deployment rollout operations.", no_args_is_help=True)
 console = Console()
@@ -63,11 +66,12 @@ def rollout_undo(
                       parameters={"to_revision": to_revision or "previous"})
         return
     double_confirm("roll back", f"deployment {name}")
-    conn, _ = get_connection(target)
-    result = rollout.rollout_undo(conn, name, namespace, to_revision)
-    console.print(
-        f"[green]Rolled {name} back to revision {result['rolled_to_revision']}[/] "
-        f"(from {result['from_revision']})"
+    console.print_json(
+        json.dumps(
+            gov.rollout_undo_deployment(
+                name=name, namespace=namespace, to_revision=to_revision, target=target
+            )
+        )
     )
 
 
@@ -77,9 +81,9 @@ def rollout_pause(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:
     """Pause a deployment's rollout."""
-    conn, _ = get_connection(target)
-    rollout.rollout_pause(conn, name, namespace)
-    console.print(f"[green]Paused rollout of {name}[/]")
+    console.print_json(
+        json.dumps(gov.rollout_pause(name=name, namespace=namespace, target=target))
+    )
 
 
 @rollout_app.command("resume")
@@ -88,9 +92,9 @@ def rollout_resume(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:
     """Resume a paused deployment's rollout."""
-    conn, _ = get_connection(target)
-    rollout.rollout_resume(conn, name, namespace)
-    console.print(f"[green]Resumed rollout of {name}[/]")
+    console.print_json(
+        json.dumps(gov.rollout_resume(name=name, namespace=namespace, target=target))
+    )
 
 
 @rollout_app.command("set-image")
@@ -103,9 +107,14 @@ def rollout_set_image(
     namespace: NamespaceOption = None,
 ) -> None:
     """Update a deployment container's image."""
-    conn, _ = get_connection(target)
-    result = rollout.set_deployment_image(conn, name, container, image, namespace)
-    console.print(
-        f"[green]Set {name}/{container} image -> {image}[/] "
-        f"(was {result['previous_image']})"
+    console.print_json(
+        json.dumps(
+            gov.set_deployment_image(
+                name=name,
+                container=container,
+                image=image,
+                namespace=namespace,
+                target=target,
+            )
+        )
     )

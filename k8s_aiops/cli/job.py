@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -16,6 +18,7 @@ from k8s_aiops.cli._common import (
     get_connection,
 )
 from k8s_aiops.ops import batch
+from mcp_server.tools import batch as gov
 
 job_app = typer.Typer(help="Job operations.", no_args_is_help=True)
 cronjob_app = typer.Typer(help="CronJob operations.", no_args_is_help=True)
@@ -61,9 +64,9 @@ def job_delete(
         dry_run_print(operation="delete_job", detail=f"delete job {name}")
         return
     double_confirm("delete", f"job {name}")
-    conn, _ = get_connection(target)
-    batch.delete_job(conn, name, namespace)
-    console.print(f"[green]Deleted job {name}[/]")
+    console.print_json(
+        json.dumps(gov.delete_job(name=name, namespace=namespace, target=target))
+    )
 
 
 @cronjob_app.command("list")

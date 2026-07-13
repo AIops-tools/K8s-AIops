@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -13,6 +15,7 @@ from k8s_aiops.cli._common import (
     get_connection,
 )
 from k8s_aiops.ops import controllers
+from mcp_server.tools import controllers as gov
 
 statefulset_app = typer.Typer(help="StatefulSet operations.", no_args_is_help=True)
 console = Console()
@@ -55,8 +58,10 @@ def statefulset_scale(
     namespace: NamespaceOption = None,
 ) -> None:
     """Scale a statefulset to a replica count."""
-    conn, _ = get_connection(target)
-    result = controllers.scale_statefulset(conn, name, replicas, namespace)
-    console.print(
-        f"[green]Scaled {name} -> {replicas}[/] (was {result['previous_replicas']})"
+    console.print_json(
+        json.dumps(
+            gov.scale_statefulset(
+                name=name, replicas=replicas, namespace=namespace, target=target
+            )
+        )
     )

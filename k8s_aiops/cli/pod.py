@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -15,7 +17,8 @@ from k8s_aiops.cli._common import (
     dry_run_print,
     get_connection,
 )
-from k8s_aiops.ops import describe, lifecycle, workloads
+from k8s_aiops.ops import describe, workloads
+from mcp_server.tools import lifecycle as gov
 
 pod_app = typer.Typer(help="Pod operations.", no_args_is_help=True)
 console = Console()
@@ -96,6 +99,6 @@ def pod_delete(
         dry_run_print(operation="delete_pod", detail=f"delete pod {name}")
         return
     double_confirm("delete", f"pod {name}")
-    conn, _ = get_connection(target)
-    lifecycle.delete_pod(conn, name, namespace)
-    console.print(f"[green]Deleted pod {name}[/]")
+    console.print_json(
+        json.dumps(gov.delete_pod(name=name, namespace=namespace, target=target))
+    )

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -15,6 +17,7 @@ from k8s_aiops.cli._common import (
     get_connection,
 )
 from k8s_aiops.ops import namespaces
+from mcp_server.tools import namespaces as gov
 
 namespace_app = typer.Typer(help="Namespace operations.", no_args_is_help=True)
 console = Console()
@@ -38,9 +41,7 @@ def namespace_list(target: TargetOption = None) -> None:
 @cli_errors
 def namespace_create(name: str, target: TargetOption = None) -> None:
     """Create a namespace."""
-    conn, _ = get_connection(target)
-    namespaces.create_namespace(conn, name)
-    console.print(f"[green]Created namespace {name}[/]")
+    console.print_json(json.dumps(gov.create_namespace(name=name, target=target)))
 
 
 @namespace_app.command("delete")
@@ -53,6 +54,4 @@ def namespace_delete(
         dry_run_print(operation="delete_namespace", detail=f"delete namespace {name}")
         return
     double_confirm("delete", f"namespace {name} (and all its resources)")
-    conn, _ = get_connection(target)
-    namespaces.delete_namespace(conn, name)
-    console.print(f"[green]Deleted namespace {name}[/]")
+    console.print_json(json.dumps(gov.delete_namespace(name=name, target=target)))
