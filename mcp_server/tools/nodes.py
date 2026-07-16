@@ -2,6 +2,10 @@
 
 cordon_node and uncordon_node pass ``undo=`` lambdas pointing at each other so
 the harness records the exact inverse to the undo store.
+
+Every write takes ``dry_run: bool = False`` — a dry run returns a
+``{"dryRun": True, "wouldX": ...}`` preview without touching the cluster, and
+the undo lambdas are guarded so a preview never records an undo descriptor.
 """
 
 from typing import Optional
@@ -46,16 +50,23 @@ def node_describe(name: str, target: Optional[str] = None) -> dict:
         "params": {"name": params.get("name")},
         "skill": "k8s-aiops",
         "note": "Inverse of cordon_node: make the node schedulable again.",
-    },
+    }
+    if isinstance(result, dict) and not result.get("dryRun")
+    else None,
 )
 @tool_errors("dict")
-def cordon_node(name: str, target: Optional[str] = None) -> dict:
-    """[WRITE] Mark a node unschedulable (no new pods land). Inverse: uncordon_node.
+def cordon_node(name: str, dry_run: bool = False, target: Optional[str] = None) -> dict:
+    """[WRITE][risk=medium] Mark a node unschedulable (no new pods land). Inverse: uncordon_node.
+
+    Pass dry_run=True to preview without cordoning.
 
     Args:
         name: Node name (see node_list).
+        dry_run: If True, preview without cordoning.
         target: k8s target name from config.
     """
+    if dry_run:
+        return {"dryRun": True, "wouldCordon": {"name": name}}
     return life_ops.cordon_node(_get_connection(target), name)
 
 
@@ -67,16 +78,23 @@ def cordon_node(name: str, target: Optional[str] = None) -> dict:
         "params": {"name": params.get("name")},
         "skill": "k8s-aiops",
         "note": "Inverse of uncordon_node: mark the node unschedulable again.",
-    },
+    }
+    if isinstance(result, dict) and not result.get("dryRun")
+    else None,
 )
 @tool_errors("dict")
-def uncordon_node(name: str, target: Optional[str] = None) -> dict:
-    """[WRITE] Mark a node schedulable again. Inverse: cordon_node.
+def uncordon_node(name: str, dry_run: bool = False, target: Optional[str] = None) -> dict:
+    """[WRITE][risk=medium] Mark a node schedulable again. Inverse: cordon_node.
+
+    Pass dry_run=True to preview without uncordoning.
 
     Args:
         name: Node name (see node_list).
+        dry_run: If True, preview without uncordoning.
         target: k8s target name from config.
     """
+    if dry_run:
+        return {"dryRun": True, "wouldUncordon": {"name": name}}
     return life_ops.uncordon_node(_get_connection(target), name)
 
 
@@ -91,17 +109,23 @@ def uncordon_node(name: str, target: Optional[str] = None) -> dict:
             "Partial inverse of drain_node: uncordon re-enables scheduling. "
             "Evicted pods are NOT restored — their controllers reschedule them."
         ),
-    },
+    }
+    if isinstance(result, dict) and not result.get("dryRun")
+    else None,
 )
 @tool_errors("dict")
-def drain_node(name: str, target: Optional[str] = None) -> dict:
-    """[WRITE] Cordon a node and evict its pods. HIGH RISK — no full undo.
+def drain_node(name: str, dry_run: bool = False, target: Optional[str] = None) -> dict:
+    """[WRITE][risk=high] Cordon a node and evict its pods. HIGH RISK — no full undo.
 
     DaemonSet-managed and mirror pods are skipped (like ``kubectl drain``). The
-    cordon is reversible (uncordon_node); the evictions are not.
+    cordon is reversible (uncordon_node); the evictions are not. Pass
+    dry_run=True to preview without draining.
 
     Args:
         name: Node name (see node_list).
+        dry_run: If True, preview without cordoning or evicting.
         target: k8s target name from config.
     """
+    if dry_run:
+        return {"dryRun": True, "wouldDrain": {"name": name}}
     return life_ops.drain_node(_get_connection(target), name)

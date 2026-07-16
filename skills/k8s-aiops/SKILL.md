@@ -101,7 +101,13 @@ k8s-aiops doctor          # or skip init — works with your current kube-contex
 | Cloud models (Claude, GPT) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | type-safe parameters, audited |
 
-## MCP Tools (51 — 37 read, 14 write)
+> **MCP environment caveat**: MCP clients spawn the server with a CLEAN
+> environment — shell exports may not reach it. Set `K8S_AIOPS_HOME`,
+> `K8S_AUDIT_APPROVED_BY`, `K8S_AUDIT_RATIONALE` (and `KUBECONFIG` when the
+> kubeconfig is not at `~/.kube/config`) in the MCP server config's `env`
+> block, not just in your terminal.
+
+## MCP Tools (51 — 36 read, 15 write)
 
 | Category | Tools | R/W |
 |----------|-------|:---:|
@@ -129,6 +135,8 @@ k8s-aiops doctor          # or skip init — works with your current kube-contex
 
 **Security — secrets**: `secret_list` returns secret names, types, and key NAMES only. Secret VALUES are never read, returned, or logged, and there is deliberately no tool that returns secret values.
 
+**Dry-run previews**: every write tool takes `dry_run: bool = False`. A dry run returns a `{"dryRun": true, "wouldX": ...}` preview without touching the cluster, and no undo descriptor is recorded for a preview.
+
 **Harness features that light up**: write tools with a clean inverse pass an `undo=` lambda so the harness records an inverse descriptor (with `_undo_id`) to the undo store — `scale_deployment`/`scale_statefulset` record a scale-back to their returned `previous_replicas`, `set_deployment_image` records a restore to the captured `previous_image`, `cordon_node` ↔ `uncordon_node` and `rollout_pause` ↔ `rollout_resume` are mutual inverses, and `create_namespace` records a `delete_namespace`. `drain_node` records a partial `uncordon_node` inverse (cordon is reversible; evictions are not). `delete_*` and `rollout_undo_deployment` declare no undo. `risk_level=high`: `delete_deployment`, `delete_job`, `delete_namespace`, `drain_node`, `rollout_undo_deployment`. All 51 tools are audit-logged under `~/.k8s-aiops/` and pass through the policy pre-check + budget/runaway guard + graduated risk-tier gate. `pod_top`/`node_top` return a clear "metrics-server not installed" message (not an error) when metrics-server is absent. Avoid tight poll loops (re-listing pods every second) — the runaway breaker backs this up.
 
 ## CLI Quick Reference
@@ -140,7 +148,7 @@ k8s-aiops pod get <name> [-n <ns>]
 k8s-aiops pod describe <name> [-n <ns>]                   # status, container states, events
 k8s-aiops pod logs <name> [-n <ns>] [--tail 200] [-c <container>]
 k8s-aiops pod delete <name> [-n <ns>] [--dry-run]        # double confirm
-k8s-aiops deployment list|get|scale|restart|delete ...
+k8s-aiops deployment list|get|scale|restart|delete ...    # scale/restart: single confirm + --dry-run; delete: double confirm
 k8s-aiops rollout status|history|pause|resume <name> [-n <ns>]
 k8s-aiops rollout set-image <name> <container> <image> [-n <ns>]
 k8s-aiops rollout undo <name> [--to-revision N] [--dry-run]   # double confirm

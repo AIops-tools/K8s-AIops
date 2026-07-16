@@ -1,7 +1,9 @@
 """MCP tools for other workload controllers: statefulsets, daemonsets, replicasets.
 
 Reads are ``risk_level=low``. ``scale_statefulset`` is a ``medium`` write that
-passes an ``undo=`` lambda restoring the previous replica count.
+passes an ``undo=`` lambda restoring the previous replica count. It takes
+``dry_run: bool = False`` — a dry run returns a ``{"dryRun": True, ...}``
+preview without touching the cluster and never records an undo descriptor.
 """
 
 from typing import Optional
@@ -101,7 +103,9 @@ def replicaset_list(
         "skill": "k8s-aiops",
         "note": "Inverse of scale_statefulset: restore the previous replica count.",
     }
-    if isinstance(result, dict) and "previous_replicas" in result
+    if isinstance(result, dict)
+    and not result.get("dryRun")
+    and "previous_replicas" in result
     else None,
 )
 @tool_errors("dict")
@@ -109,14 +113,23 @@ def scale_statefulset(
     name: str,
     replicas: int,
     namespace: Optional[str] = None,
+    dry_run: bool = False,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Scale a statefulset to ``replicas``. Inverse: restore previous count.
+    """[WRITE][risk=medium] Scale a statefulset to ``replicas``. Inverse: restore previous count.
+
+    Pass dry_run=True to preview without scaling (no undo is recorded for a preview).
 
     Args:
         name: StatefulSet name.
         replicas: Desired replica count.
         namespace: Namespace; omit for the target's default namespace.
+        dry_run: If True, preview without scaling.
         target: k8s target name from config.
     """
+    if dry_run:
+        return {
+            "dryRun": True,
+            "wouldScale": {"name": name, "namespace": namespace, "replicas": replicas},
+        }
     return ops.scale_statefulset(_get_connection(target), name, replicas, namespace)

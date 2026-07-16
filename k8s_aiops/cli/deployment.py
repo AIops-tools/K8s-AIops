@@ -59,8 +59,16 @@ def deployment_scale(
     replicas: int,
     target: TargetOption = None,
     namespace: NamespaceOption = None,
+    dry_run: DryRunOption = False,
 ) -> None:
-    """Scale a deployment to a replica count."""
+    """Scale a deployment to a replica count (medium risk — single confirm)."""
+    if dry_run:
+        dry_run_print(
+            operation="scale_deployment",
+            detail=f"scale deployment {name} to {replicas} replica(s)",
+        )
+        return
+    typer.confirm(f"Scale deployment '{name}' to {replicas} replica(s)?", abort=True)
     console.print_json(
         json.dumps(
             gov.scale_deployment(
@@ -73,9 +81,19 @@ def deployment_scale(
 @deployment_app.command("restart")
 @cli_errors
 def deployment_restart(
-    name: str, target: TargetOption = None, namespace: NamespaceOption = None
+    name: str,
+    target: TargetOption = None,
+    namespace: NamespaceOption = None,
+    dry_run: DryRunOption = False,
 ) -> None:
-    """Trigger a rolling restart of a deployment."""
+    """Trigger a rolling restart of a deployment (medium risk — single confirm)."""
+    if dry_run:
+        dry_run_print(
+            operation="rollout_restart_deployment",
+            detail=f"rolling-restart deployment {name}",
+        )
+        return
+    typer.confirm(f"Rolling-restart deployment '{name}'?", abort=True)
     console.print_json(
         json.dumps(
             gov.rollout_restart_deployment(name=name, namespace=namespace, target=target)

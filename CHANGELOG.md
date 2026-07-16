@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.0 — 2026-07-16
+
+### Fixed
+- **`secrets.enc` now follows `K8S_AIOPS_HOME`** (secretstore hardcoded the real
+  home directory; config/audit/undo already relocated — found in live verification).
+- **Audit fidelity**: failures sanitized into `{"error": ...}` results by the MCP error
+  layer are now audited as `status=error` (they previously read as `ok`, hiding failed
+  attempts from exception reports), and no undo is recorded for a call that failed.
+- **All 15 MCP write tools now accept `dry_run=True` previews** (no client call, no undo recorded for previews).
+- CLI `deployment scale`/`restart` gained `--dry-run` + a confirm step.
+- Docs: MCP clients spawn servers with a CLEAN environment — set `K8S_AIOPS_HOME`/`K8S_AUDIT_APPROVED_BY`/`KUBECONFIG` in the MCP config's `env` block.
+
+### Tests
+- `doctor` and the `init` wizard are now fully covered (previously ~10–20%); plus a
+  regression test for the sanitized-failure audit status.
+
 ## v0.3.0 — 2026-07-13
 
 Security-hardening release from a line-wide code review.

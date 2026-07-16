@@ -1,6 +1,8 @@
 """MCP tools for batch workloads: jobs and cronjobs.
 
-Reads are ``risk_level=low``. ``delete_job`` is a ``high`` write with no undo.
+Reads are ``risk_level=low``. ``delete_job`` is a ``high`` write with no undo;
+it takes ``dry_run: bool = False`` — a dry run returns a ``{"dryRun": True,
+...}`` preview without touching the cluster.
 """
 
 from typing import Optional
@@ -72,13 +74,21 @@ def cronjob_get(
 @governed_tool(risk_level="high")
 @tool_errors("dict")
 def delete_job(
-    name: str, namespace: Optional[str] = None, target: Optional[str] = None
+    name: str,
+    namespace: Optional[str] = None,
+    dry_run: bool = False,
+    target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Delete a job and its pods. HIGH RISK — no undo.
+    """[WRITE][risk=high] Delete a job and its pods. HIGH RISK — no undo.
+
+    Pass dry_run=True to preview without deleting.
 
     Args:
         name: Job name.
         namespace: Namespace; omit for the target's default namespace.
+        dry_run: If True, preview without deleting.
         target: k8s target name from config.
     """
+    if dry_run:
+        return {"dryRun": True, "wouldDelete": {"name": name, "namespace": namespace}}
     return ops.delete_job(_get_connection(target), name, namespace)

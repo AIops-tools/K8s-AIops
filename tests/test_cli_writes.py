@@ -2,14 +2,16 @@
 
 The CLI write commands delegate real execution to the ``@governed_tool``
 functions in ``mcp_server.tools``. These tests drive a write command PAST the
-dry-run branch and the double-confirm prompts and assert the call really went
-through the governed path (audit row on disk) — the regression test for the
-"CLI writes were unaudited" line-wide fix.
+dry-run branch and the confirm prompts (double for high-risk delete, single
+for medium-risk scale/restart) and assert the call really went through the
+governed path (audit row on disk) — the regression test for the "CLI writes
+were unaudited" line-wide fix.
 """
 
 from __future__ import annotations
 
 import sqlite3
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -89,4 +91,86 @@ def test_cli_deployment_delete_aborts_without_double_confirm(gov_home, monkeypat
     result = CliRunner().invoke(app, ["deployment", "delete", "web"], input="y\nn\n")
     assert result.exit_code != 0
     conn.apps.delete_namespaced_deployment.assert_not_called()
+    assert not (gov_home / "audit.db").exists()
+
+
+# ── medium-risk single-confirm commands: deployment scale / restart ──────────
+
+
+def _patch_conn(monkeypatch) -> MagicMock:
+    conn = _mock_conn()
+    conn.apps.read_namespaced_deployment_scale.return_value = SimpleNamespace(
+        spec=SimpleNamespace(replicas=3)
+    )
+    import mcp_server.tools.lifecycle as gov_lifecycle
+
+    monkeypatch.setattr(gov_lifecycle, "_get_connection", lambda target=None: conn)
+    return conn
+
+
+@pytest.mark.unit
+def test_cli_deployment_scale_dry_run_makes_no_call_and_no_audit(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "scale", "web", "5", "--dry-run"])
+    assert result.exit_code == 0, result.output
+    assert "DRY-RUN" in result.output
+    conn.apps.patch_namespaced_deployment_scale.assert_not_called()
+    assert not (gov_home / "audit.db").exists()
+
+
+@pytest.mark.unit
+def test_cli_deployment_scale_confirmed_goes_through_governance(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "scale", "web", "5"], input="y\n")
+    assert result.exit_code == 0, result.output
+    conn.apps.patch_namespaced_deployment_scale.assert_called_once()
+    assert _audit_tools(gov_home / "audit.db") == ["scale_deployment"]
+
+
+@pytest.mark.unit
+def test_cli_deployment_scale_declined_aborts_without_call(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "scale", "web", "5"], input="n\n")
+    assert result.exit_code != 0
+    conn.apps.patch_namespaced_deployment_scale.assert_not_called()
+    assert not (gov_home / "audit.db").exists()
+
+
+@pytest.mark.unit
+def test_cli_deployment_restart_dry_run_makes_no_call_and_no_audit(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "restart", "web", "--dry-run"])
+    assert result.exit_code == 0, result.output
+    assert "DRY-RUN" in result.output
+    conn.apps.patch_namespaced_deployment.assert_not_called()
+    assert not (gov_home / "audit.db").exists()
+
+
+@pytest.mark.unit
+def test_cli_deployment_restart_confirmed_goes_through_governance(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "restart", "web"], input="y\n")
+    assert result.exit_code == 0, result.output
+    conn.apps.patch_namespaced_deployment.assert_called_once()
+    assert _audit_tools(gov_home / "audit.db") == ["rollout_restart_deployment"]
+
+
+@pytest.mark.unit
+def test_cli_deployment_restart_declined_aborts_without_call(gov_home, monkeypatch):
+    from k8s_aiops.cli import app
+
+    conn = _patch_conn(monkeypatch)
+    result = CliRunner().invoke(app, ["deployment", "restart", "web"], input="n\n")
+    assert result.exit_code != 0
+    conn.apps.patch_namespaced_deployment.assert_not_called()
     assert not (gov_home / "audit.db").exists()

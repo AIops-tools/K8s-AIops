@@ -66,14 +66,24 @@ No secrets live in this file — credentials come from the kubeconfig.
 }
 ```
 
+> **Note — MCP servers get a clean environment**: most MCP clients spawn the
+> server without your shell's exports, so variables like `K8S_AIOPS_HOME`,
+> `K8S_AUDIT_APPROVED_BY`, `K8S_AUDIT_RATIONALE` (and `KUBECONFIG`, if your
+> kubeconfig is not at `~/.kube/config`) must be set in the MCP server
+> config's `env` block above — values exported only in your terminal may
+> never reach the server.
+
 ## Audit & Safety
 
 - Every tool call is logged to `~/.k8s-aiops/audit.db` (local SQLite; relocate with
   `K8S_AIOPS_HOME`).
 - Reversible writes record an inverse undo descriptor (`scale_deployment` →
   scale-back to previous; `cordon_node` ↔ `uncordon_node`).
-- `delete_deployment` is `risk_level=high`; CLI destructive commands require double
-  confirmation and support `--dry-run`.
+- Every MCP write tool takes `dry_run=True` and returns a `{"dryRun": true, ...}`
+  preview without touching the cluster (no undo recorded for a preview).
+- `delete_deployment` is `risk_level=high`; destructive CLI commands require double
+  confirmation, medium-risk ones (`deployment scale`/`restart`) a single
+  confirmation, and all write commands support `--dry-run`.
 - All API text passes through `sanitize()` (output hygiene: control/format-char
   stripping + truncation).
 
