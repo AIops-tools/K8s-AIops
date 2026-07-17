@@ -21,6 +21,7 @@ from k8s_aiops.cli.service import service_app
 from k8s_aiops.cli.statefulset import statefulset_app
 from k8s_aiops.cli.storage import storage_app
 from k8s_aiops.cli.top import top_app
+from k8s_aiops.cli.undo import undo_app
 
 app = typer.Typer(
     name="k8s-aiops",
@@ -43,6 +44,7 @@ app.add_typer(rollout_app, name="rollout")
 app.add_typer(top_app, name="top")
 app.add_typer(node_app, name="node")
 app.add_typer(namespace_app, name="namespace")
+app.add_typer(undo_app, name="undo")
 app.command("init")(init_cmd)
 app.command("doctor")(doctor_cmd)
 app.command("cluster-info")(cluster_info_cmd)

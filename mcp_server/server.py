@@ -30,6 +30,7 @@ from mcp_server.tools import (  # noqa: F401 — side effects
     nodes,
     rollout,
     storage,
+    undo,
     workloads,
 )
 
