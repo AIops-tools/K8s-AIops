@@ -75,7 +75,7 @@ def tool_errors(shape: str = "dict") -> Callable:
 mcp = FastMCP(
     "k8s-aiops",
     instructions=(
-        "Governed Kubernetes operations (preview). Works with any cluster a "
+        "Governed Kubernetes operations. Works with any cluster a "
         "kubeconfig can reach — standard Kubernetes, k3s, EKS, GKE, AKS. Read "
         "tools cover pods, deployments, statefulsets, daemonsets, replicasets, "
         "jobs, cronjobs, services, ingresses, endpoints, configmaps, secrets "

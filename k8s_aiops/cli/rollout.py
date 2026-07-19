@@ -16,6 +16,7 @@ from k8s_aiops.cli._common import (
     double_confirm,
     dry_run_print,
     get_connection,
+    join_opt,
 )
 from k8s_aiops.ops import rollout
 from mcp_server.tools import rollout as gov
@@ -47,7 +48,7 @@ def rollout_history(
     for col in ("revision", "replicaset", "images"):
         table.add_column(col)
     for r in rows:
-        table.add_row(str(r["revision"]), r["replicaset"], ",".join(r["images"]))
+        table.add_row(str(r["revision"]), r["replicaset"], join_opt(r["images"]))
     console.print(table)
 
 

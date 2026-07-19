@@ -11,15 +11,20 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str
 from k8s_aiops.ops._shared import call
 
 _REVISION_ANNO = "deployment.kubernetes.io/revision"
 _HASH_LABEL = "pod-template-hash"
 
 
-def _s(value: Any, limit: int = 128) -> str:
-    return sanitize(str(value if value is not None else ""), limit)
+def _s(value: Any, limit: int = 128) -> str | None:
+    """Sanitize an optional field: absent stays ``None``, never becomes ``""``.
+
+    An empty string reads as "this field exists and is empty"; a missing field
+    is a different fact. Collapsing the two hides information from the caller.
+    """
+    return opt_str(value, limit)
 
 
 def rollout_status(conn: Any, name: str, namespace: str | None = None) -> dict:

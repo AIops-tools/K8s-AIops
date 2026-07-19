@@ -118,13 +118,17 @@ def service_list(
 
 @mcp.tool()
 @governed_tool(risk_level="low")
-@tool_errors("list")
+@tool_errors("dict")
 def event_list(
     namespace: Optional[str] = None, limit: int = 50, target: Optional[str] = None
-) -> list:
+) -> dict:
     """[READ] List recent events (type, reason, object, message, age).
 
     Useful for diagnosing why a pod is not starting (FailedScheduling, etc.).
+
+    Returns {"events": [...], "returned": N, "limit": L, "truncated": bool}.
+    When ``truncated`` is true there are MORE events than shown — re-run with a
+    higher ``limit`` instead of reporting the shown set as complete.
 
     Args:
         namespace: Namespace; omit for all namespaces.

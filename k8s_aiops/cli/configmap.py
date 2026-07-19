@@ -14,6 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     get_connection,
+    join_opt,
 )
 from k8s_aiops.ops import config_resources
 
@@ -60,6 +61,6 @@ def secret_list(target: TargetOption = None, namespace: NamespaceOption = None) 
         table.add_column(col)
     for r in rows:
         table.add_row(
-            r["name"], r["namespace"], r["type"], ",".join(r["key_names"]), r["age"]
+            r["name"], r["namespace"], r["type"], join_opt(r["key_names"]), r["age"]
         )
     console.print(table)

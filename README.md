@@ -1,5 +1,5 @@
 <!-- mcp-name: io.github.AIops-tools/k8s-aiops -->
-# k8s-aiops (preview)
+# k8s-aiops
 
 > **Disclaimer**: This is a community-maintained open-source project and is **not
 > affiliated with, endorsed by, or sponsored by the Cloud Native Computing
@@ -8,24 +8,69 @@
 > [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops) under
 > the MIT license.
 
-Governed Kubernetes operations for AI agents — **51 MCP tools**, every one wrapped
+Governed Kubernetes operations for AI agents — **55 MCP tools**, every one wrapped
 with the bundled `@governed_tool` harness: a local unified audit log under
 `~/.k8s-aiops/`, policy engine, token/runaway budget guard, undo-token recording, and
 graduated-autonomy risk tiers. Coverage spans pods, deployments, statefulsets,
 daemonsets, replicasets, jobs/cronjobs, services, ingresses, endpoints,
 configmaps, secrets (names/keys only), PVCs/PVs/storageclasses, nodes, namespaces,
 events, rollouts (status/history/undo/pause/resume/set-image), pod/node describe,
-pod/node top, and a cluster health summary.
+pod/node top, a cluster health summary, and read-only **diagnostics / RCA**
+(pod-health and workload-readiness) that flag the root cause worst-first.
 
 > **Standalone**: the governance harness is bundled in the package
 > (`k8s_aiops.governance`) — k8s-aiops has no external skill-family dependency.
-> Preview: common cluster operations, not yet exhaustive.
+> Coverage focuses on common cluster operations and is not yet exhaustive.
+
+> **Verification status**: exercised end-to-end against a live kind cluster (v1.36); the
+> diagnostics/RCA tools added in this release are mock-tested only. See
+> [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## What works
 
 Any cluster a kubeconfig can reach: standard Kubernetes, **k3s**, **EKS**, **GKE**,
 **AKS**, kind, minikube. Authentication (client certs, tokens, EKS/GKE/AKS exec
 plugins) is delegated entirely to the kubeconfig.
+
+## Security: read-only mode
+
+This tool is meant to be handed to an AI agent, so its safety story is enforced
+by the server rather than requested in a prompt:
+
+```bash
+export K8S_READ_ONLY=1
+```
+
+With that set, the **16 write tools are never registered**. An MCP client
+lists **39 tools instead of 55** — the writes are not hidden, not
+gated behind a flag, and not merely refused when called. They are absent from
+the session. A model cannot invoke a tool it was never offered, and cannot be
+argued into one.
+
+That distinction is the whole point. A tool that exists but refuses still invites
+retry loops and "I'll describe the call instead" behaviour from smaller models,
+and it leaves a reviewer trusting a promise. An absent tool is a fact you can
+check: connect, list the tools, and see that the writes are not there.
+
+Enforcement is two layers deep, so the switch cannot be sidestepped by changing
+entry point:
+
+| Layer | What it does | Covers |
+|---|---|---|
+| `@governed_tool` harness | refuses every non-read operation outright | MCP, CLI, and in-process callers |
+| MCP registration | write tools are removed from `list_tools()` | anything speaking MCP |
+
+Read operations are unaffected, and every call is still audited to
+`~/.k8s-aiops/audit.db`.
+
+> The read/write split is derived from each tool's declared `risk_level`, and a
+> test asserts that this never disagrees with the `[READ]`/`[WRITE]` tag in the
+> tool's own documentation — so a write can't quietly present itself as a read.
+
+Running a smaller / local model? See
+[agent-guardrails.md](skills/k8s-aiops/references/agent-guardrails.md) — it lists
+the guardrails this tool now enforces for you (so you don't spend prompt budget
+restating them) and gives a ready-made system prompt for what's left.
 
 ## Quick Start
 
@@ -39,6 +84,10 @@ k8s-aiops init
 k8s-aiops doctor
 k8s-aiops pod list
 k8s-aiops deployment list -n default
+
+# Read-only RCA — worst-first root-cause findings, no changes made:
+k8s-aiops diagnose pod-health -n prod
+k8s-aiops diagnose workload-readiness -n prod
 ```
 
 To define named targets (multiple clusters/contexts), create
@@ -107,7 +156,7 @@ the AIops-tools line-wide encrypted-secret-store pattern.
 
 ## Contributing & feature requests
 
-This is a preview — coverage is intentionally focused. **Missing a device, action, or feature you need?** Open an issue or pull request at [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops/issues) — feature requests, contributions, and comments are all welcome.
+Coverage is intentionally focused. **Missing a device, action, or feature you need?** Open an issue or pull request at [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops/issues) — feature requests, contributions, and comments are all welcome.
 
 ## License
 

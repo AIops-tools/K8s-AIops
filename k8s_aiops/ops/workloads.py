@@ -9,12 +9,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str, sanitize
 from k8s_aiops.ops._shared import age_of, call
 
 
-def _s(value: Any, limit: int = 128) -> str:
-    return sanitize(str(value if value is not None else ""), limit)
+def _s(value: Any, limit: int = 128) -> str | None:
+    """Sanitize an optional field: absent stays ``None``, never becomes ``""``.
+
+    An empty string reads as "this field exists and is empty"; a missing field
+    is a different fact. Collapsing the two hides information from the caller.
+    """
+    return opt_str(value, limit)
 
 
 def _pod_summary(pod: Any) -> dict:
@@ -123,7 +128,7 @@ def get_deployment(conn: Any, name: str, namespace: str | None = None) -> dict:
         conn.apps.read_namespaced_deployment, name, ns, path=f"deployments/{name}"
     )
     summary = _deployment_summary(dep)
-    summary["strategy"] = _s(dep.spec.strategy.type if dep.spec.strategy else "", 32)
+    summary["strategy"] = _s(dep.spec.strategy.type if dep.spec.strategy else None, 32)
     containers = dep.spec.template.spec.containers or []
     summary["images"] = [_s(c.image, 200) for c in containers]
     return summary
@@ -156,30 +161,53 @@ def list_services(conn: Any, namespace: str | None = None) -> list[dict]:
     return out
 
 
-def list_events(conn: Any, namespace: str | None = None, limit: int = 50) -> list[dict]:
+def list_events(conn: Any, namespace: str | None = None, limit: int = 50) -> dict:
     """[READ] List recent events (type, reason, object, message, age).
 
     Namespace-scoped when given; otherwise across all namespaces.
+
+    Returns an envelope rather than a bare list::
+
+        {"events": [...], "returned": 50, "limit": 50, "truncated": true}
+
+    so a truncated read announces itself. A bare list cannot say "there is
+    more" — the consumer has to infer it from the length happening to equal the
+    limit, and a smaller local model faced with a capped result tends to report
+    that it saw everything. One extra event is requested so ``truncated`` is
+    *measured* rather than guessed from a length coincidence.
     """
+    requested = max(1, int(limit))
     if namespace:
         result = call(
-            conn.core.list_namespaced_event, namespace, limit=limit, path="events"
+            conn.core.list_namespaced_event,
+            namespace,
+            limit=requested + 1,
+            path="events",
         )
     else:
         result = call(
-            conn.core.list_event_for_all_namespaces, limit=limit, path="events"
+            conn.core.list_event_for_all_namespaces,
+            limit=requested + 1,
+            path="events",
         )
+    raw = list(result.items or [])
+    truncated = len(raw) > requested
     out: list[dict] = []
-    for ev in result.items or []:
+    for ev in raw[:requested]:
         obj = ev.involved_object
         out.append(
             {
                 "type": _s(ev.type, 32),
                 "reason": _s(ev.reason, 64),
-                "object": _s(f"{obj.kind}/{obj.name}" if obj else "", 128),
+                "object": _s(f"{obj.kind}/{obj.name}" if obj else None, 128),
                 "namespace": _s(ev.metadata.namespace, 64),
                 "message": _s(ev.message, 200),
                 "age": age_of(ev.last_timestamp or ev.metadata.creation_timestamp),
             }
         )
-    return out
+    return {
+        "events": out,
+        "returned": len(out),
+        "limit": requested,
+        "truncated": truncated,
+    }

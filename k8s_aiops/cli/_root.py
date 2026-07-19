@@ -9,6 +9,7 @@ from k8s_aiops.cli.cluster import api_resources_cmd, cluster_info_cmd
 from k8s_aiops.cli.configmap import configmap_app, secret_app
 from k8s_aiops.cli.daemonset import daemonset_app
 from k8s_aiops.cli.deployment import deployment_app
+from k8s_aiops.cli.diagnostics import diagnose_app
 from k8s_aiops.cli.doctor import doctor_cmd
 from k8s_aiops.cli.ingress import ingress_app
 from k8s_aiops.cli.init import init_cmd
@@ -45,6 +46,7 @@ app.add_typer(top_app, name="top")
 app.add_typer(node_app, name="node")
 app.add_typer(namespace_app, name="namespace")
 app.add_typer(undo_app, name="undo")
+app.add_typer(diagnose_app, name="diagnose")
 app.command("init")(init_cmd)
 app.command("doctor")(doctor_cmd)
 app.command("cluster-info")(cluster_info_cmd)
@@ -53,7 +55,11 @@ app.command("api-resources")(api_resources_cmd)
 
 @app.command("events")
 @cli_errors
-def events_cmd(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
+def events_cmd(
+    target: TargetOption = None,
+    namespace: NamespaceOption = None,
+    limit: int = typer.Option(50, "--limit", help="Maximum number of events to show"),
+) -> None:
     """List recent cluster events (namespace-scoped or all-namespaces)."""
     from rich.console import Console
     from rich.table import Table
@@ -62,15 +68,21 @@ def events_cmd(target: TargetOption = None, namespace: NamespaceOption = None) -
     from k8s_aiops.ops import workloads
 
     conn, _ = get_connection(target)
-    rows = workloads.list_events(conn, namespace)
+    result = workloads.list_events(conn, namespace, limit)
     table = Table(title="Kubernetes Events")
     for col in ("type", "reason", "object", "namespace", "message", "age"):
         table.add_column(col)
-    for r in rows:
+    for r in result["events"]:
         table.add_row(
             r["type"], r["reason"], r["object"], r["namespace"], r["message"], r["age"]
         )
-    Console().print(table)
+    console_out = Console()
+    console_out.print(table)
+    if result["truncated"]:
+        console_out.print(
+            f"[yellow]Showing {result['returned']} of more than {result['limit']} "
+            f"events — truncated, re-run with a higher --limit.[/yellow]"
+        )
 
 
 @app.command("mcp")

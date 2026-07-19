@@ -1,6 +1,6 @@
 # k8s-aiops Capabilities
 
-51 MCP tools (37 read / 14 write). Every tool is wrapped with `@governed_tool`
+55 MCP tools (39 read / 16 write). Every tool is wrapped with `@governed_tool`
 (audit + policy + budget + risk-tier; undo where a clean inverse exists). Returns
 are high-signal summaries — `_get` / `_describe` tools add detail for a single object.
 
@@ -34,6 +34,9 @@ are high-signal summaries — `_get` / `_describe` tools add detail for a single
 | `cluster_info` | server version, node/ready/namespace counts | low |
 | `api_resources` | available API groups + versions | low |
 | `event_list` | type, reason, object, namespace, message, age | low |
+| `pod_health_rca` | worst-first findings: CrashLoopBackOff, image-pull, OOMKilled, unschedulable, high restarts (each cites the reason/count) | low |
+| `workload_readiness_rca` | worst-first findings: ready<desired, zero-ready outages, stuck rollouts (Deployment/StatefulSet/DaemonSet) | low |
+| `undo_list` | recorded reversible writes / not-yet-applied undo tokens | low |
 
 ## Write tools
 
@@ -52,6 +55,7 @@ are high-signal summaries — `_get` / `_describe` tools add detail for a single
 | `delete_namespace` | delete namespace + everything in it | **high** | none |
 | `cordon_node` / `uncordon_node` | toggle schedulability | medium | each other |
 | `drain_node` | cordon + evict pods (skips DaemonSet/mirror) | **high** | partial: `uncordon_node` |
+| `undo_apply` | execute a recorded inverse (itself governed, single-use, supports `dry_run`) | medium | n/a (is the undo) |
 
 ## Token-budget notes
 

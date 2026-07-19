@@ -8,32 +8,37 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str
 from k8s_aiops.ops._shared import age_of, call
 
 
-def _s(value: Any, limit: int = 128) -> str:
-    return sanitize(str(value if value is not None else ""), limit)
+def _s(value: Any, limit: int = 128) -> str | None:
+    """Sanitize an optional field: absent stays ``None``, never becomes ``""``.
+
+    An empty string reads as "this field exists and is empty"; a missing field
+    is a different fact. Collapsing the two hides information from the caller.
+    """
+    return opt_str(value, limit)
 
 
-def _capacity(resources: Any) -> str:
+def _capacity(resources: Any) -> str | None:
     if not resources:
-        return ""
+        return None
     # `requests` here is a k8s resource-requests dict, not the HTTP library;
     # bandit's B113 (request-without-timeout) is a false positive.
     requests = getattr(resources, "requests", None) or {}
-    return _s(requests.get("storage", ""), 32)  # nosec B113
+    return _s(requests.get("storage"), 32)  # nosec B113
 
 
 def _pvc_summary(pvc: Any) -> dict:
     meta = pvc.metadata
     status = pvc.status
     spec = pvc.spec
-    actual = (status.capacity or {}).get("storage", "") if status else ""
+    actual = (status.capacity or {}).get("storage") if status else None
     return {
         "name": _s(meta.name),
         "namespace": _s(meta.namespace, 64),
-        "status": _s(status.phase if status else "", 32),
+        "status": _s(status.phase if status else None, 32),
         "volume": _s(spec.volume_name, 128),
         "capacity": _s(actual, 32) or _capacity(spec.resources),
         "storage_class": _s(spec.storage_class_name, 64),
@@ -72,15 +77,15 @@ def list_pvs(conn: Any) -> list[dict]:
     for pv in result.items or []:
         spec = pv.spec
         status = pv.status
-        capacity = (spec.capacity or {}).get("storage", "") if spec else ""
+        capacity = (spec.capacity or {}).get("storage") if spec else None
         claim = spec.claim_ref if spec else None
         out.append(
             {
                 "name": _s(pv.metadata.name),
                 "capacity": _s(capacity, 32),
-                "status": _s(status.phase if status else "", 32),
-                "claim": _s(f"{claim.namespace}/{claim.name}" if claim else "", 128),
-                "storage_class": _s(spec.storage_class_name if spec else "", 64),
+                "status": _s(status.phase if status else None, 32),
+                "claim": _s(f"{claim.namespace}/{claim.name}" if claim else None, 128),
+                "storage_class": _s(spec.storage_class_name if spec else None, 64),
                 "age": age_of(pv.metadata.creation_timestamp),
             }
         )

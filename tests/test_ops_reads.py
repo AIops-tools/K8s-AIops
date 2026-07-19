@@ -47,7 +47,7 @@ def test_list_deployments_all_namespaces_summary():
         "desired": 3,
         "ready": 2,
         "available": 2,
-        "age": "",
+        "age": None,
     }
     conn.apps.list_deployment_for_all_namespaces.assert_called_once()
 
@@ -137,9 +137,12 @@ def test_list_events_normalizes_involved_object():
     )
     conn = MagicMock()
     conn.core.list_event_for_all_namespaces.return_value = SimpleNamespace(items=[ev])
-    rows = ops.list_events(conn)
-    assert rows[0]["object"] == "Pod/web-1"
-    assert rows[0]["reason"] == "FailedScheduling"
+    result = ops.list_events(conn)
+    assert result["events"][0]["object"] == "Pod/web-1"
+    assert result["events"][0]["reason"] == "FailedScheduling"
+    assert result["returned"] == 1
+    assert result["limit"] == 50
+    assert result["truncated"] is False
 
 
 # ── controllers: daemonsets / replicasets ───────────────────────────────────
@@ -428,7 +431,7 @@ def test_list_namespaces_summary():
     conn = MagicMock()
     conn.core.list_namespace.return_value = SimpleNamespace(items=[ns])
     rows = ops.list_namespaces(conn)
-    assert rows[0] == {"name": "payments", "phase": "Active", "age": ""}
+    assert rows[0] == {"name": "payments", "phase": "Active", "age": None}
 
 
 @pytest.mark.unit

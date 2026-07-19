@@ -5,7 +5,12 @@ from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
 
-from k8s_aiops.cli._common import TargetOption, cli_errors, get_connection
+from k8s_aiops.cli._common import (
+    TargetOption,
+    cli_errors,
+    get_connection,
+    join_opt,
+)
 from k8s_aiops.ops import cluster
 
 console = Console()
@@ -28,5 +33,5 @@ def api_resources_cmd(target: TargetOption = None) -> None:
     for col in ("group", "preferred", "versions"):
         table.add_column(col)
     for r in rows:
-        table.add_row(r["group"], r["preferred"], ",".join(r["versions"]))
+        table.add_row(r["group"], r["preferred"], join_opt(r["versions"]))
     console.print(table)

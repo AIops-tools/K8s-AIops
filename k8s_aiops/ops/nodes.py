@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str, sanitize
 from k8s_aiops.ops._shared import age_of, call
 
 _ROLE_PREFIX = "node-role.kubernetes.io/"
@@ -38,10 +38,10 @@ def list_nodes(conn: Any) -> list[dict]:
         info = node.status.node_info
         out.append(
             {
-                "name": sanitize(node.metadata.name, 128),
+                "name": opt_str(node.metadata.name, 128),
                 "status": _ready_status(node),
                 "roles": sanitize(_node_roles(node.metadata.labels), 128),
-                "version": sanitize(info.kubelet_version if info else "", 64),
+                "version": opt_str(info.kubelet_version if info else None, 64),
                 "schedulable": not bool(node.spec.unschedulable),
                 "age": age_of(node.metadata.creation_timestamp),
             }

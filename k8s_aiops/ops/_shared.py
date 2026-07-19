@@ -33,10 +33,15 @@ def call(fn: Callable[..., Any], *args: Any, path: str = "", **kwargs: Any) -> A
         raise translate_api_error(exc, path) from exc
 
 
-def age_of(timestamp: Any) -> str:
-    """Render a creation timestamp as a compact age string (e.g. '3d', '5m')."""
+def age_of(timestamp: Any) -> str | None:
+    """Render a creation timestamp as a compact age string (e.g. '3d', '5m').
+
+    Returns ``None`` — not ``""`` — when the timestamp is absent or unparseable:
+    "this object has no age we could read" is a different fact from an empty
+    string, and a consumer must be able to tell them apart.
+    """
     if not timestamp:
-        return ""
+        return None
     try:
         if isinstance(timestamp, str):
             ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
@@ -54,4 +59,4 @@ def age_of(timestamp: Any) -> str:
             return f"{secs // 3600}h"
         return f"{secs // 86400}d"
     except (ValueError, TypeError):
-        return ""
+        return None

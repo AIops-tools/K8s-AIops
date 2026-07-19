@@ -9,12 +9,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str
 from k8s_aiops.ops._shared import age_of, call
 
 
-def _s(value: Any, limit: int = 128) -> str:
-    return sanitize(str(value if value is not None else ""), limit)
+def _s(value: Any, limit: int = 128) -> str | None:
+    """Sanitize an optional field: absent stays ``None``, never becomes ``""``.
+
+    An empty string reads as "this field exists and is empty"; a missing field
+    is a different fact. Collapsing the two hides information from the caller.
+    """
+    return opt_str(value, limit)
 
 
 def _job_summary(job: Any) -> dict:
@@ -61,7 +66,7 @@ def _cronjob_summary(cj: Any) -> dict:
         "schedule": _s(cj.spec.schedule, 64),
         "suspend": bool(cj.spec.suspend),
         "active": len(status.active or []) if status else 0,
-        "last_schedule": age_of(last) if last else "",
+        "last_schedule": age_of(last),
         "age": age_of(meta.creation_timestamp),
     }
 

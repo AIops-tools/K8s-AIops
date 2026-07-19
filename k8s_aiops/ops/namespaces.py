@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str, sanitize
 from k8s_aiops.ops._shared import age_of, call
 
 
@@ -18,8 +18,8 @@ def list_namespaces(conn: Any) -> list[dict]:
     for ns in result.items or []:
         out.append(
             {
-                "name": sanitize(ns.metadata.name, 128),
-                "phase": sanitize(ns.status.phase if ns.status else "", 32),
+                "name": opt_str(ns.metadata.name, 128),
+                "phase": opt_str(ns.status.phase if ns.status else None, 32),
                 "age": age_of(ns.metadata.creation_timestamp),
             }
         )

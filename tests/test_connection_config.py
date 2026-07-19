@@ -315,8 +315,9 @@ def test_age_of_parses_iso_string_with_z():
 
 
 @pytest.mark.unit
-def test_age_of_empty_and_invalid_return_blank():
+def test_age_of_empty_and_invalid_return_none():
+    """An unreadable age is absent (None), not an empty string."""
     from k8s_aiops.ops._shared import age_of
 
-    assert age_of(None) == ""
-    assert age_of("not-a-timestamp") == ""
+    assert age_of(None) is None
+    assert age_of("not-a-timestamp") is None

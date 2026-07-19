@@ -14,7 +14,7 @@ from typing import Any
 from kubernetes.client.exceptions import ApiException
 
 from k8s_aiops.connection import translate_api_error
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import opt_str
 from k8s_aiops.ops._shared import _REQUEST_TIMEOUT
 
 _GROUP = "metrics.k8s.io"
@@ -26,11 +26,16 @@ _ABSENT_MSG = (
 )
 
 
-def _s(value: Any, limit: int = 128) -> str:
-    return sanitize(str(value if value is not None else ""), limit)
+def _s(value: Any, limit: int = 128) -> str | None:
+    """Sanitize an optional field: absent stays ``None``, never becomes ``""``.
+
+    An empty string reads as "this field exists and is empty"; a missing field
+    is a different fact. Collapsing the two hides information from the caller.
+    """
+    return opt_str(value, limit)
 
 
-def _absent(detail: str = "") -> dict:
+def _absent(detail: str | None = None) -> dict:
     return {"available": False, "message": _ABSENT_MSG, "detail": _s(detail, 200), "items": []}
 
 
@@ -46,7 +51,7 @@ def node_top(conn: Any) -> dict:
         )
     except ApiException as exc:
         if getattr(exc, "status", None) in _ABSENT_CODES:
-            return _absent(getattr(exc, "reason", "") or "")
+            return _absent(getattr(exc, "reason", None))
         raise translate_api_error(exc, "metrics/nodes") from exc
     items = [
         {
@@ -76,7 +81,7 @@ def pod_top(conn: Any, namespace: str | None = None) -> dict:
             )
     except ApiException as exc:
         if getattr(exc, "status", None) in _ABSENT_CODES:
-            return _absent(getattr(exc, "reason", "") or "")
+            return _absent(getattr(exc, "reason", None))
         raise translate_api_error(exc, "metrics/pods") from exc
     items: list[dict] = []
     for it in data.get("items") or []:

@@ -45,6 +45,8 @@ EXPECTED_TOOLS = {
     "node_top", "pod_top",
     # cluster
     "cluster_info", "api_resources",
+    # diagnostics (read RCA)
+    "pod_health_rca", "workload_readiness_rca",
 }
 
 WRITE_TOOLS_WITH_UNDO = {
@@ -74,6 +76,7 @@ def test_all_modules_import():
         "k8s_aiops.ops.rollout",
         "k8s_aiops.ops.metrics",
         "k8s_aiops.ops.cluster",
+        "k8s_aiops.ops.diagnostics",
         "k8s_aiops.cli",
         "k8s_aiops.cli._root",
         "k8s_aiops.cli._common",
@@ -93,6 +96,7 @@ def test_all_modules_import():
         "k8s_aiops.cli.rollout",
         "k8s_aiops.cli.top",
         "k8s_aiops.cli.cluster",
+        "k8s_aiops.cli.diagnostics",
         "mcp_server.server",
         "mcp_server._shared",
         "mcp_server.tools.workloads",
@@ -108,6 +112,7 @@ def test_all_modules_import():
         "mcp_server.tools.rollout",
         "mcp_server.tools.metrics",
         "mcp_server.tools.cluster",
+        "mcp_server.tools.diagnostics",
     ):
         importlib.import_module(name)
 
@@ -137,7 +142,7 @@ def test_cli_app_builds_and_help_works():
         "pod", "deployment", "statefulset", "daemonset", "job", "cronjob",
         "service", "ingress", "configmap", "secret", "storage", "rollout",
         "top", "node", "namespace", "init", "events", "doctor", "cluster-info",
-        "api-resources", "mcp",
+        "api-resources", "diagnose", "mcp",
     ):
         assert sub in result.output
 
@@ -155,7 +160,7 @@ def test_cli_leaf_help_triggers_lazy_imports():
         ["cronjob", "--help"], ["ingress", "--help"], ["configmap", "--help"],
         ["secret", "--help"], ["storage", "--help"], ["rollout", "--help"],
         ["top", "--help"], ["init", "--help"], ["cluster-info", "--help"],
-        ["api-resources", "--help"],
+        ["api-resources", "--help"], ["diagnose", "--help"],
     ):
         result = runner.invoke(app, cmd)
         assert result.exit_code == 0, f"{cmd} failed: {result.output}"
@@ -184,6 +189,8 @@ def test_cli_leaf_help_triggers_lazy_imports():
         ["namespace", "list", "--help"], ["namespace", "create", "--help"],
         ["namespace", "delete", "--help"],
         ["events", "--help"],
+        ["diagnose", "pod-health", "--help"],
+        ["diagnose", "workload-readiness", "--help"],
     ):
         result = runner.invoke(app, cmd)
         assert result.exit_code == 0, f"{cmd} failed: {result.output}"
@@ -196,6 +203,16 @@ def test_mcp_list_tools_exposes_expected_tools():
     tools = asyncio.run(mcp.list_tools())
     names = {t.name for t in tools}
     assert EXPECTED_TOOLS <= names, f"missing: {EXPECTED_TOOLS - names}"
+
+
+@pytest.mark.unit
+def test_registered_tool_count_is_pinned():
+    """Drift guard: the advertised tool count must match the registry."""
+    from mcp_server import _shared
+
+    assert len(_shared.mcp._tool_manager._tools) == 55, (
+        "tool count changed — update README/SKILL/server.json too"
+    )
 
 
 @pytest.mark.unit

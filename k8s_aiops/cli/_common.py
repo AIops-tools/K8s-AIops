@@ -79,3 +79,14 @@ def double_confirm(action: str, resource: str) -> None:
         f"Confirm 2/2: really {action} '{resource}'? This may be irreversible.",
         abort=True,
     )
+
+
+def join_opt(values: list[str | None] | None, sep: str = ",") -> str:
+    """Join a list whose elements may be ``None`` into a table cell.
+
+    Ops rows report an absent field as ``None`` rather than ``""``. A list
+    element can therefore be ``None`` too, and ``str.join`` raises on it. A
+    missing element is rendered as ``?`` so it stays visible instead of being
+    silently dropped.
+    """
+    return sep.join("?" if v is None else str(v) for v in (values or []))

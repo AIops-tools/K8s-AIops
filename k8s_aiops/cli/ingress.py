@@ -11,6 +11,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     get_connection,
+    join_opt,
 )
 from k8s_aiops.ops import networking
 
@@ -28,7 +29,7 @@ def ingress_list(target: TargetOption = None, namespace: NamespaceOption = None)
     for col in ("name", "namespace", "class", "hosts", "age"):
         table.add_column(col)
     for r in rows:
-        table.add_row(r["name"], r["namespace"], r["class"], ",".join(r["hosts"]), r["age"])
+        table.add_row(r["name"], r["namespace"], r["class"], join_opt(r["hosts"]), r["age"])
     console.print(table)
 
 
