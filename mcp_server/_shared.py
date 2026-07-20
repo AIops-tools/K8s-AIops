@@ -17,15 +17,37 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Optional
 
+import urllib3
 from mcp.server.fastmcp import FastMCP
 
 from k8s_aiops.config import load_config
 from k8s_aiops.connection import ConnectionManager, K8sApiError
-from k8s_aiops.governance import sanitize
+from k8s_aiops.governance import mark_unknown, sanitize
 
 logger = logging.getLogger(__name__)
 
 _DOCTOR_HINT = "Run 'k8s-aiops doctor' to verify the kubeconfig context and cluster access."
+
+
+# Failures that leave the request's fate genuinely undetermined: the bytes went
+# out and either the response or the rest of the connection was lost. A write
+# that hits one of these MAY have taken effect on the API server.
+#
+# Deliberately narrow, and these are the client library's transport errors, not
+# its API errors: K8sApiError carries a status, which means the API server
+# answered and the outcome is known. MaxRetryError wraps a connection that was
+# never established. Marking either 'unknown' would cry wolf on every
+# unreachable cluster.
+_UNDETERMINED_ERRORS = (
+    urllib3.exceptions.ReadTimeoutError,
+    urllib3.exceptions.ProtocolError,
+)
+
+
+# Long enough to carry the remediation sentence. These messages teach the
+# caller what to do instead, and that clause comes last — a 300-char cap cut
+# it off silently on every refusal long enough to need one.
+_ERROR_MAX = 800
 
 
 def _safe_error(exc: Exception, tool: str) -> str:
@@ -41,7 +63,7 @@ def _safe_error(exc: Exception, tool: str) -> str:
         K8sApiError,
     )
     if isinstance(exc, _passthrough):
-        return sanitize(str(exc), 300)
+        return sanitize(str(exc), _ERROR_MAX)
     return f"{type(exc).__name__}: operation failed."
 
 
@@ -65,7 +87,13 @@ def tool_errors(shape: str = "dict") -> Callable:
                     return [{"error": msg, "hint": _DOCTOR_HINT}]
                 if shape == "str":
                     return f"Error: {msg} {_DOCTOR_HINT}"
-                return {"error": msg, "hint": _DOCTOR_HINT}
+                payload = {"error": msg, "hint": _DOCTOR_HINT}
+                # Flatten the exception into a dict and its type is gone
+                # for good — so classify here, while it is still known,
+                # whether the operation may nonetheless have taken effect.
+                if isinstance(e, _UNDETERMINED_ERRORS):
+                    return mark_unknown(payload)
+                return payload
 
         return wrapper
 
@@ -94,11 +122,26 @@ mcp = FastMCP(
 _conn_mgr: Optional[ConnectionManager] = None
 
 
-def _get_connection(target: Optional[str] = None) -> Any:
-    """Return a Kubernetes connection, lazily initialising the manager."""
+def _manager() -> ConnectionManager:
+    """Return the shared ConnectionManager, lazily initialising it."""
     global _conn_mgr  # noqa: PLW0603
     if _conn_mgr is None:
         config_path_str = os.environ.get("K8S_AIOPS_CONFIG")
         config_path = Path(config_path_str) if config_path_str else None
         _conn_mgr = ConnectionManager(load_config(config_path))
-    return _conn_mgr.connect(target)
+    return _conn_mgr
+
+
+def _get_connection(target: Optional[str] = None) -> Any:
+    """Return a Kubernetes connection, lazily initialising the manager."""
+    return _manager().connect(target)
+
+
+def _get_target_config(target: Optional[str] = None) -> Any:
+    """Resolve a target's config without building an API client.
+
+    Write guards call this on the dry-run path, where ``_get_connection`` is out
+    of bounds: a preview may read (here, the kubeconfig on disk) but must never
+    build a client it could accidentally write through.
+    """
+    return _manager().target_config(target)

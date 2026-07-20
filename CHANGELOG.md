@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.7.0 — 2026-07-20
+
+### Fixed
+- **`delete_namespace` guards the control-plane namespaces.** `kube-system`, `kube-public` and `kube-node-lease` require an explicit `confirm`; there was no protected list at all.
+- `urllib3` is now declared explicitly rather than relied on transitively..
+- Harness: a write whose response is lost is audited `status=unknown`, not `error` — it may have taken effect. Undo tokens gain `effectVerified` (undo.db migrated in place).
+- Harness: a dry-run no longer records an undo token, and no longer requires a named approver. Guards now run on the preview path.
+- Truncated strings end in an ellipsis instead of being cut silently; error messages are capped at 800 chars, not 300.
+
+See RELEASE_NOTES.md for the full detail.
+
 ## v0.5.0 — 2026-07-17
 
 ### Added

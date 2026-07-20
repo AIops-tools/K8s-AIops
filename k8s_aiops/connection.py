@@ -14,18 +14,32 @@ discipline as the pyVmomi 8.x ManagedObject lesson); we apply it pre-emptively.
 All ``ApiException``s are translated centrally into ``K8sApiError`` with a
 teaching message — REST-wrapper skills should translate API errors at the
 connection layer from the first version, not let users hit raw tracebacks.
+
+``credential_namespace()`` reads (never calls the cluster for) the one fact a
+write guard needs about our own identity: whether this target's credential is a
+ServiceAccount token, and if so which namespace that ServiceAccount lives in.
+Deleting that namespace would revoke the credential mid-flight, so
+``ops.namespaces`` refuses it.
 """
 
 from __future__ import annotations
 
+import base64
+import json
+import os
+from pathlib import Path
 from typing import Any
 
+import yaml
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 
 from k8s_aiops.config import AppConfig, TargetConfig, load_config
+
+# A ServiceAccount's identity is 'system:serviceaccount:<namespace>:<name>'.
+_SA_SUB_PREFIX = "system:serviceaccount:"
 
 # Side-stored typed Api objects, keyed by target.context_key. See docstring.
 _CONN_APIS: dict[str, dict[str, Any]] = {}
@@ -79,6 +93,111 @@ def translate_api_error(exc: ApiException, path: str = "") -> K8sApiError:
         status_code=status,
         path=path,
     )
+
+
+def _kubeconfig_paths(target: TargetConfig) -> list[Path]:
+    """The kubeconfig files this target loads, in the client's own precedence order."""
+    if target.kubeconfig:
+        return [Path(target.kubeconfig).expanduser()]
+    env = os.environ.get("KUBECONFIG", "").strip()
+    if env:
+        return [Path(p).expanduser() for p in env.split(os.pathsep) if p]
+    return [Path.home() / ".kube" / "config"]
+
+
+def _service_account_namespace(token: str) -> str | None:
+    """The namespace of the ServiceAccount a JWT belongs to, or None if it is not one.
+
+    The signature is deliberately NOT verified. This reads our *own* credential to
+    learn where it lives; it does not authenticate anybody, so there is nothing to
+    verify against and no trust decision resting on the result — the only thing it
+    can do is make a write refuse itself.
+
+    Returns None for an opaque/static bearer token: those are not namespace-bound,
+    so no namespace deletion can revoke them.
+    """
+    parts = token.strip().split(".")
+    if len(parts) != 3:
+        return None
+    body = parts[1]
+    claims = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    sub = claims.get("sub")
+    if isinstance(sub, str) and sub.startswith(_SA_SUB_PREFIX):
+        namespace = sub[len(_SA_SUB_PREFIX) :].split(":", 1)[0]
+        if namespace:
+            return namespace
+    legacy = claims.get("kubernetes.io/serviceaccount/namespace")  # pre-1.21 tokens
+    if isinstance(legacy, str) and legacy:
+        return legacy
+    bound = claims.get("kubernetes.io")  # projected/bound tokens
+    if isinstance(bound, dict) and isinstance(bound.get("namespace"), str):
+        return bound["namespace"] or None
+    return None
+
+
+def _context_user(doc: dict, context_name: str | None) -> dict | None:
+    """The ``users:`` entry backing a kubeconfig context (or the current-context)."""
+    wanted = context_name or doc.get("current-context")
+    if not wanted:
+        return None
+    for ctx in doc.get("contexts") or []:
+        if isinstance(ctx, dict) and ctx.get("name") == wanted:
+            user_name = (ctx.get("context") or {}).get("user")
+            break
+    else:
+        return None
+    if not user_name:
+        return None
+    for user in doc.get("users") or []:
+        if isinstance(user, dict) and user.get("name") == user_name:
+            entry = user.get("user")
+            return entry if isinstance(entry, dict) else None
+    return None
+
+
+def credential_namespace(target: TargetConfig) -> str | None:
+    """The namespace whose ServiceAccount this target authenticates as, or None.
+
+    Reads the kubeconfig off disk only — no cluster call — so a dry run can
+    consult it without contacting the apiserver.
+
+    ``None`` means **unknown**: callers must treat it as "cannot guard", never as
+    a cleared "not me". Every branch below returns None rather than guessing:
+
+      * client-certificate auth — a cert identity is not namespace-bound, so no
+        namespace deletion can revoke it;
+      * ``exec`` / ``auth-provider`` credentials (EKS, GKE, AKS) — minted outside
+        the cluster, likewise not namespace-bound;
+      * an opaque (non-JWT) bearer token, an unreadable/absent kubeconfig, or a
+        context that names no user.
+
+    The context's own ``namespace:`` field is deliberately NOT used as evidence.
+    It is a default-namespace *preference* for commands, not a statement about
+    where the credential lives — keying off it would refuse a cluster-admin's
+    perfectly safe delete of whatever namespace they happened to be scoped to.
+    """
+    try:
+        for path in _kubeconfig_paths(target):
+            if not path.is_file():
+                continue
+            with open(path) as fh:
+                doc = yaml.safe_load(fh) or {}
+            if not isinstance(doc, dict):
+                continue
+            user = _context_user(doc, target.context)
+            if user is None:
+                continue  # context lives in a later file of a merged KUBECONFIG
+            if "client-certificate" in user or "client-certificate-data" in user:
+                return None
+            if "exec" in user or "auth-provider" in user:
+                return None
+            token = user.get("token")
+            if isinstance(token, str) and token:
+                return _service_account_namespace(token)
+            return None
+    except Exception:  # noqa: BLE001 — unknown identity, never a false "it is me"
+        return None
+    return None
 
 
 class K8sConnection:
@@ -178,13 +297,22 @@ class ConnectionManager:
         cfg = config or load_config()
         return cls(cfg)
 
-    def connect(self, target_name: str | None = None) -> K8sConnection:
-        """Connect to a target by name, or the default target."""
-        target = (
+    def target_config(self, target_name: str | None = None) -> TargetConfig:
+        """Resolve a target by name (or the default) WITHOUT building any API client.
+
+        Write guards need the kubeconfig identity before deciding whether an
+        operation may proceed, including on the dry-run path — which must be able
+        to refuse without contacting the apiserver.
+        """
+        return (
             self._config.get_target(target_name)
             if target_name
             else self._config.default_target
         )
+
+    def connect(self, target_name: str | None = None) -> K8sConnection:
+        """Connect to a target by name, or the default target."""
+        target = self.target_config(target_name)
         cached = self._connections.get(target.name)
         if cached is not None:
             return cached

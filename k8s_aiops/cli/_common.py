@@ -61,6 +61,18 @@ def get_connection(target: str | None, config_path: Path | None = None) -> tuple
     return mgr.connect(target), cfg
 
 
+def get_target_config(target: str | None, config_path: Path | None = None) -> Any:
+    """Resolve a target's config without building an API client.
+
+    Write guards need it on the ``--dry-run`` path, which prints a preview
+    without ever connecting — a preview may read, but must never write.
+    """
+    from k8s_aiops.config import load_config
+    from k8s_aiops.connection import ConnectionManager
+
+    return ConnectionManager(load_config(config_path)).target_config(target)
+
+
 def dry_run_print(*, operation: str, detail: str, parameters: dict | None = None) -> None:
     """Print a dry-run preview of the operation that would be performed."""
     console.print("\n[bold magenta][DRY-RUN] No changes will be made.[/]")
