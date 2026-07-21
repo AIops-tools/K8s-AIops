@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
 )
 from k8s_aiops.ops import batch
@@ -61,7 +61,13 @@ def job_delete(
 ) -> None:
     """Delete a job and its pods (destructive — double confirm)."""
     if dry_run:
-        dry_run_print(operation="delete_job", detail=f"delete job {name}")
+        preview = gov.delete_job(name=name, namespace=namespace, target=target, dry_run=True)
+        dry_run_preview(
+            preview,
+            operation="delete_job",
+            detail=f"delete job {name}",
+            parameters=preview.get("wouldDelete"),
+        )
         return
     double_confirm("delete", f"job {name}")
     console.print_json(

@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
     get_target_config,
 )
@@ -63,14 +63,26 @@ def namespace_delete(
     confirm: ConfirmProtectedOption = False,
 ) -> None:
     """Delete a namespace and EVERYTHING in it (HIGH RISK — double confirm)."""
-    # Ahead of the --dry-run branch: a preview must refuse whatever the real
-    # command would refuse, and this branch never reaches the governed tool.
+    if dry_run:
+        # Through the governed twin: it runs the protected/self-lockout guards
+        # itself, so a preview reports the refusal the real delete would raise
+        # instead of a green banner — and the refusal is audited like any other
+        # governed outcome.
+        preview = gov.delete_namespace(
+            name=name, target=target, confirm=confirm, dry_run=True
+        )
+        dry_run_preview(
+            preview,
+            operation="delete_namespace",
+            detail=f"delete namespace {name} and everything in it",
+            parameters=preview.get("wouldDelete"),
+        )
+        return
+    # Ahead of the prompts on the real path: nobody should be asked to
+    # double-confirm a delete the guard is about to refuse anyway.
     namespaces.guard_delete_namespace(
         name, confirm=confirm, target=get_target_config(target)
     )
-    if dry_run:
-        dry_run_print(operation="delete_namespace", detail=f"delete namespace {name}")
-        return
     double_confirm("delete", f"namespace {name} (and all its resources)")
     console.print_json(
         json.dumps(gov.delete_namespace(name=name, target=target, confirm=confirm))

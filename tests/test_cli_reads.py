@@ -1,13 +1,13 @@
-"""CLI read + dry-run command bodies against MOCKED connections.
+"""CLI read command bodies against MOCKED connections.
 
 Each test patches ``get_connection`` in the CLI sub-module so the command runs
 its real body (table build / detail print) AND drives the real ops function,
 which reads from a MagicMock kubernetes client. Assertions check the rendered
-output, that the correct kubernetes API method was invoked, and (for writes)
-that ``--dry-run`` short-circuits before any governed call.
+output and that the correct kubernetes API method was invoked.
 
-No governance side effects are exercised here (that is test_cli_writes.py); the
-dry-run write tests assert the API method is NEVER called.
+No governance side effects are exercised here. ``--dry-run`` previews now route
+through the governed twin — they are audited writes-that-never-write, so they
+live in test_cli_writes.py where a temp ``K8S_AIOPS_HOME`` is bound.
 """
 
 from __future__ import annotations
@@ -92,32 +92,6 @@ def test_cli_node_describe_prints_taints(monkeypatch):
 
 
 @pytest.mark.unit
-def test_cli_node_drain_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import nodes as gov
-
-    _patch_conn(monkeypatch, "k8s_aiops.cli.node")
-    called = {"n": 0}
-    monkeypatch.setattr(gov, "drain_node", lambda **k: called.__setitem__("n", called["n"] + 1))
-    result = runner.invoke(app, ["node", "drain", "node-a", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
-    assert called["n"] == 0
-
-
-@pytest.mark.unit
-def test_cli_node_cordon_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import nodes as gov
-
-    _patch_conn(monkeypatch, "k8s_aiops.cli.node")
-    monkeypatch.setattr(gov, "cordon_node", lambda **k: pytest.fail("must not run on dry-run"))
-    result = runner.invoke(app, ["node", "cordon", "node-a", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
-
-
-@pytest.mark.unit
 def test_cli_node_uncordon_calls_gov(monkeypatch):
     from k8s_aiops.cli import app
     from mcp_server.tools import nodes as gov
@@ -196,18 +170,6 @@ def test_cli_pod_logs_prints_lines(monkeypatch):
     # tail_lines forwarded to the client.
     _, kwargs = conn.core.read_namespaced_pod_log.call_args
     assert kwargs["tail_lines"] == 10
-
-
-@pytest.mark.unit
-def test_cli_pod_delete_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import lifecycle as gov
-
-    _patch_conn(monkeypatch, "k8s_aiops.cli.pod")
-    monkeypatch.setattr(gov, "delete_pod", lambda **k: pytest.fail("must not run on dry-run"))
-    result = runner.invoke(app, ["pod", "delete", "web-1", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
 
 
 # ── top ─────────────────────────────────────────────────────────────────────
@@ -388,18 +350,6 @@ def test_cli_job_get_prints_images(monkeypatch):
 
 
 @pytest.mark.unit
-def test_cli_job_delete_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import batch as gov
-
-    _patch_conn(monkeypatch, "k8s_aiops.cli.job")
-    monkeypatch.setattr(gov, "delete_job", lambda **k: pytest.fail("must not run on dry-run"))
-    result = runner.invoke(app, ["job", "delete", "backup", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
-
-
-@pytest.mark.unit
 def test_cli_cronjob_list_renders(monkeypatch):
     from k8s_aiops.cli import app
 
@@ -448,17 +398,6 @@ def test_cli_namespace_list_renders(monkeypatch):
     assert result.exit_code == 0, result.output
     assert "payments" in result.output
     assert "Active" in result.output
-
-
-@pytest.mark.unit
-def test_cli_namespace_delete_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import namespaces as gov
-
-    monkeypatch.setattr(gov, "delete_namespace", lambda **k: pytest.fail("must not run on dry-run"))
-    result = runner.invoke(app, ["namespace", "delete", "payments", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
 
 
 # ── ingress ─────────────────────────────────────────────────────────────────
@@ -606,20 +545,6 @@ def test_cli_rollout_history_sorts_revisions(monkeypatch):
     result = runner.invoke(app, ["rollout", "history", "web", "-n", "prod"])
     assert result.exit_code == 0, result.output
     assert "web-a" in result.output and "web-b" in result.output
-
-
-@pytest.mark.unit
-def test_cli_rollout_undo_dry_run_makes_no_gov_call(monkeypatch):
-    from k8s_aiops.cli import app
-    from mcp_server.tools import rollout as gov
-
-    _patch_conn(monkeypatch, "k8s_aiops.cli.rollout")
-    monkeypatch.setattr(
-        gov, "rollout_undo_deployment", lambda **k: pytest.fail("must not run on dry-run")
-    )
-    result = runner.invoke(app, ["rollout", "undo", "web", "--dry-run"])
-    assert result.exit_code == 0, result.output
-    assert "DRY-RUN" in result.output
 
 
 # ── top-level: events, cluster-info, api-resources ──────────────────────────

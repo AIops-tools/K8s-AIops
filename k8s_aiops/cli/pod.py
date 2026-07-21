@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
 )
 from k8s_aiops.ops import describe, workloads
@@ -96,7 +96,13 @@ def pod_delete(
 ) -> None:
     """Delete a pod (destructive — double confirm). A controller may recreate it."""
     if dry_run:
-        dry_run_print(operation="delete_pod", detail=f"delete pod {name}")
+        preview = gov.delete_pod(name=name, namespace=namespace, target=target, dry_run=True)
+        dry_run_preview(
+            preview,
+            operation="delete_pod",
+            detail=f"delete pod {name}",
+            parameters=preview.get("wouldDelete"),
+        )
         return
     double_confirm("delete", f"pod {name}")
     console.print_json(

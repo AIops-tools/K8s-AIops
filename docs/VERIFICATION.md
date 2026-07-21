@@ -58,10 +58,13 @@ k8s-aiops doctor
 - [ ] `k8s-aiops undo apply <id>` → the **prior** replica count is restored
       (proves undo captured pre-state rather than guessing).
 
-### 4. Governance actually gates
-- [ ] With no `rules.yaml`, a `high`-risk op is refused unless
-      `K8S_AUDIT_APPROVED_BY` names an approver (secure-by-default).
-- [ ] A tight poll loop trips the runaway budget guard.
+### 4. Governance records (it does not gate)
+- [ ] A `high`-risk op (e.g. `delete_deployment`) with no approver set runs to
+      completion — the skill authorizes nothing — and lands an audit row tagged
+      `risk_tier=review`. There is no read-only switch, policy file, or approval
+      gate to test.
+- [ ] A tight poll loop trips the runaway budget guard (a safety backstop, not
+      authorization).
 
 ### 5. Cleanup
 - [ ] Delete the test namespace; confirm the delete is audited.

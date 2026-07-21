@@ -13,7 +13,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
 )
 from k8s_aiops.ops import describe, nodes
@@ -63,7 +63,13 @@ def node_drain(
 ) -> None:
     """Cordon a node and evict its pods (HIGH RISK — double confirm)."""
     if dry_run:
-        dry_run_print(operation="drain_node", detail=f"cordon + evict pods on {name}")
+        preview = gov.drain_node(name=name, target=target, dry_run=True)
+        dry_run_preview(
+            preview,
+            operation="drain_node",
+            detail=f"cordon + evict pods on {name}",
+            parameters=preview.get("wouldDrain"),
+        )
         return
     double_confirm("drain", f"node {name}")
     console.print_json(json.dumps(gov.drain_node(name=name, target=target)))
@@ -76,7 +82,13 @@ def node_cordon(
 ) -> None:
     """Mark a node unschedulable (destructive — double confirm)."""
     if dry_run:
-        dry_run_print(operation="cordon_node", detail=f"cordon node {name}")
+        preview = gov.cordon_node(name=name, target=target, dry_run=True)
+        dry_run_preview(
+            preview,
+            operation="cordon_node",
+            detail=f"cordon node {name}",
+            parameters=preview.get("wouldCordon"),
+        )
         return
     double_confirm("cordon", f"node {name}")
     console.print_json(json.dumps(gov.cordon_node(name=name, target=target)))

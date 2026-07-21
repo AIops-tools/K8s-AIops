@@ -26,10 +26,18 @@ DryRunOption = Annotated[
 
 
 def _cli_error_types() -> tuple[type[BaseException], ...]:
-    """Exceptions translated to a one-line teaching error instead of a traceback."""
-    from k8s_aiops.connection import K8sApiError
+    """Exceptions translated to a one-line teaching error instead of a traceback.
 
-    return (K8sApiError, KeyError, OSError, ValueError)
+    ``PolicyDenied`` is kept here defensively even though the harness no longer
+    raises it (there is no read-only switch or approval gate to deny a call): it
+    is raised OUTSIDE ``@tool_errors`` (``@governed_tool`` wraps it), so it never
+    becomes an ``{"error": ...}`` dict the dry-run helper could catch. Were it
+    ever raised, listing it keeps the user from getting a bare traceback.
+    """
+    from k8s_aiops.connection import K8sApiError
+    from k8s_aiops.governance import PolicyDenied
+
+    return (K8sApiError, KeyError, OSError, ValueError, PolicyDenied)
 
 
 def cli_errors(fn: Callable) -> Callable:
@@ -64,8 +72,8 @@ def get_connection(target: str | None, config_path: Path | None = None) -> tuple
 def get_target_config(target: str | None, config_path: Path | None = None) -> Any:
     """Resolve a target's config without building an API client.
 
-    Write guards need it on the ``--dry-run`` path, which prints a preview
-    without ever connecting — a preview may read, but must never write.
+    A write guard needs it before the confirm prompts, so an operator is never
+    asked to double-confirm a delete the guard is about to refuse.
     """
     from k8s_aiops.config import load_config
     from k8s_aiops.connection import ConnectionManager
@@ -81,6 +89,32 @@ def dry_run_print(*, operation: str, detail: str, parameters: dict | None = None
     for k, v in (parameters or {}).items():
         console.print(f"[magenta]  Param:     {k} = {v}[/]")
     console.print("[magenta]  Run without --dry-run to execute.[/]\n")
+
+
+def dry_run_preview(
+    preview: Any, *, operation: str, detail: str, parameters: dict | None = None
+) -> None:
+    """Render a GOVERNED dry-run result as the human-readable DRY-RUN banner.
+
+    ``preview`` must come from calling the governed twin with ``dry_run=True``,
+    so every guard it carries has already run against the real target and the
+    preview lands in the audit log — MCP previews have always been audited, the
+    CLI printing a hand-written string was the outlier.
+
+    A refusal arrives as ``{"error": ...}`` (``tool_errors`` flattens the
+    exception) and is printed like any other CLI error, exit code 1, exactly as
+    the real write would. A green banner for a call that is about to be refused
+    is the preview being wrong, not merely incomplete.
+
+    On the allowed path the banner is what it always was — routing through the
+    governed call buys the guard and the audit row, not a new serialization.
+
+    Invariant: **a dry_run MAY read; it must never write.**
+    """
+    if isinstance(preview, dict) and preview.get("error"):
+        console.print(f"[red]Error: {preview['error']}[/]")
+        raise typer.Exit(1)
+    dry_run_print(operation=operation, detail=detail, parameters=parameters)
 
 
 def double_confirm(action: str, resource: str) -> None:

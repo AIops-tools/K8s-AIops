@@ -1,8 +1,9 @@
 """Read-only workload MCP tools: pods, deployments, services, events, logs.
 
-Every tool is wrapped with ``@governed_tool`` (the k8s-aiops harness): policy
-pre-check, budget/runaway guard, graduated-autonomy risk-tier gate, and audit
-logging to ~/.k8s-aiops/audit.db. These are all READ tools (no undo).
+Every tool is wrapped with ``@governed_tool`` (the k8s-aiops harness): audit
+logging to ~/.k8s-aiops/audit.db, a token/runaway budget guard, and a
+descriptive risk-tier label recorded on each audit row. These are all READ
+tools (no undo).
 """
 
 from typing import Optional

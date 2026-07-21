@@ -1,11 +1,10 @@
 """Tests for the ``k8s-aiops init`` onboarding wizard.
 
 The wizard is driven end-to-end through Typer's CliRunner with every path
-isolated under tmp_path: config.yaml under a monkeypatched CONFIG_DIR,
-rules.yaml under ``K8S_AIOPS_HOME``, and the kubeconfig a synthetic two-context
-file pointed at by ``KUBECONFIG``. k8s-aiops has no secret store — credentials
-stay in the kubeconfig — so unlike the sibling tools there is nothing to seed
-or unlock here.
+isolated under tmp_path: config.yaml under a monkeypatched CONFIG_DIR, and the
+kubeconfig a synthetic two-context file pointed at by ``KUBECONFIG``. k8s-aiops
+has no secret store — credentials stay in the kubeconfig — and it no longer
+seeds a policy file, so there is nothing to seed or unlock here.
 """
 
 from __future__ import annotations
@@ -52,7 +51,7 @@ WIZARD_INPUT = "\n\n\nn\nn\n"
 def init_home(tmp_path, monkeypatch):
     """Isolate config + governance home + kubeconfig under tmp_path."""
     config_file = tmp_path / "config.yaml"
-    monkeypatch.setenv("K8S_AIOPS_HOME", str(tmp_path))  # rules.yaml lands here
+    monkeypatch.setenv("K8S_AIOPS_HOME", str(tmp_path))  # isolate the governance home
     monkeypatch.setattr(init_mod, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(init_mod, "CONFIG_FILE", config_file)
     monkeypatch.setattr(config_mod, "CONFIG_DIR", tmp_path)
@@ -113,23 +112,12 @@ def test_init_config_lands_in_isolated_home_only(init_home):
 
 
 @pytest.mark.unit
-def test_init_seeds_default_rules_with_dual_control_tier(init_home):
+def test_init_writes_no_policy_rules(init_home):
+    """The skill no longer authorizes, so init seeds no rules.yaml — a fresh
+    install delivers full functionality and leaves permission to the account."""
     result = _run_init()
     assert result.exit_code == 0, result.output
-    rules = yaml.safe_load((init_home / "rules.yaml").read_text("utf-8"))
-    tiers = {r["name"]: r for r in rules["risk_tiers"]}
-    assert "high-risk-requires-approver" in tiers
-    assert tiers["high-risk-requires-approver"]["tier"] == "dual"
-    assert tiers["high-risk-requires-approver"]["min_risk_level"] == "high"
-
-
-@pytest.mark.unit
-def test_init_rerun_does_not_clobber_existing_rules(init_home):
-    sentinel = "# operator-authored rules — must survive re-init\nrisk_tiers: []\n"
-    (init_home / "rules.yaml").write_text(sentinel, "utf-8")
-    result = _run_init()
-    assert result.exit_code == 0, result.output
-    assert (init_home / "rules.yaml").read_text("utf-8") == sentinel
+    assert not (init_home / "rules.yaml").exists()
 
 
 @pytest.mark.unit

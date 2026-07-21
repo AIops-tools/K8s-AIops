@@ -30,9 +30,13 @@ be owner-only (`chmod 700`); the skill warns if it is more permissive.
 
 Write operations (scale, rollout restart/undo/pause/resume, set image, delete
 pod/deployment/job, create/delete namespace, cordon/uncordon/drain) all pass through
-the bundled `@governed_tool` decorator: policy pre-check, token / runaway budget
-guard, graduated-autonomy risk-tier gate, and audit logging. The CLI layer
-additionally requires double confirmation and supports `--dry-run` for the most
+the bundled `@governed_tool` decorator: token / runaway budget guard, audit logging,
+and a descriptive risk-tier label recorded on each audit row. That tier is a label,
+not a gate — there is no read-only switch, policy file, or approval gate, and the
+skill never decides whether a write is permitted (the kubeconfig context's RBAC does,
+at the apiserver). `K8S_AUDIT_APPROVED_BY` / `K8S_AUDIT_RATIONALE` are optional audit
+annotations recorded on the row when set, never required and never blocking. The CLI
+layer additionally requires double confirmation and supports `--dry-run` for the most
 destructive commands (deployment/job/namespace delete, node cordon/drain, rollout
 undo). Reversible writes record an inverse undo descriptor — `scale_deployment` /
 `scale_statefulset` record a scale-back to the previous replica count;

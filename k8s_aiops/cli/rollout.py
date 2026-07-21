@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
     join_opt,
 )
@@ -63,8 +63,16 @@ def rollout_undo(
 ) -> None:
     """Roll a deployment back to a prior revision (HIGH RISK — double confirm)."""
     if dry_run:
-        dry_run_print(operation="rollout_undo", detail=f"roll back {name}",
-                      parameters={"to_revision": to_revision or "previous"})
+        preview = gov.rollout_undo_deployment(
+            name=name, namespace=namespace, to_revision=to_revision, target=target,
+            dry_run=True,
+        )
+        dry_run_preview(
+            preview,
+            operation="rollout_undo",
+            detail=f"roll back {name}",
+            parameters=preview.get("wouldRollBack"),
+        )
         return
     double_confirm("roll back", f"deployment {name}")
     console.print_json(

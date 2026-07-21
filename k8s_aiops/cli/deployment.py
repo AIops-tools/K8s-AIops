@@ -14,7 +14,7 @@ from k8s_aiops.cli._common import (
     TargetOption,
     cli_errors,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
     get_connection,
 )
 from k8s_aiops.ops import workloads
@@ -63,9 +63,14 @@ def deployment_scale(
 ) -> None:
     """Scale a deployment to a replica count (medium risk — single confirm)."""
     if dry_run:
-        dry_run_print(
+        preview = gov.scale_deployment(
+            name=name, replicas=replicas, namespace=namespace, target=target, dry_run=True
+        )
+        dry_run_preview(
+            preview,
             operation="scale_deployment",
             detail=f"scale deployment {name} to {replicas} replica(s)",
+            parameters=preview.get("wouldScale"),
         )
         return
     typer.confirm(f"Scale deployment '{name}' to {replicas} replica(s)?", abort=True)
@@ -88,9 +93,14 @@ def deployment_restart(
 ) -> None:
     """Trigger a rolling restart of a deployment (medium risk — single confirm)."""
     if dry_run:
-        dry_run_print(
+        preview = gov.rollout_restart_deployment(
+            name=name, namespace=namespace, target=target, dry_run=True
+        )
+        dry_run_preview(
+            preview,
             operation="rollout_restart_deployment",
             detail=f"rolling-restart deployment {name}",
+            parameters=preview.get("wouldRestart"),
         )
         return
     typer.confirm(f"Rolling-restart deployment '{name}'?", abort=True)
@@ -111,7 +121,15 @@ def deployment_delete(
 ) -> None:
     """Delete a deployment and its pods (HIGH RISK — double confirm)."""
     if dry_run:
-        dry_run_print(operation="delete_deployment", detail=f"delete deployment {name}")
+        preview = gov.delete_deployment(
+            name=name, namespace=namespace, target=target, dry_run=True
+        )
+        dry_run_preview(
+            preview,
+            operation="delete_deployment",
+            detail=f"delete deployment {name}",
+            parameters=preview.get("wouldDelete"),
+        )
         return
     double_confirm("delete", f"deployment {name}")
     console.print_json(

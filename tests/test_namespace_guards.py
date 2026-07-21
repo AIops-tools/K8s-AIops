@@ -378,29 +378,61 @@ def test_cli_delete_refuses_protected_namespace(gov_home, monkeypatch):
 
 @pytest.mark.unit
 def test_cli_dry_run_refuses_protected_namespace(gov_home, monkeypatch):
-    """The CLI --dry-run branch never reaches the governed tool, so the guard is
-    called ahead of it — otherwise a preview would green-light a refused delete."""
+    """The CLI --dry-run branch routes through the governed tool, so the guard
+    runs inside it — otherwise a preview would green-light a refused delete.
+
+    The refusal is a governed outcome, so it is audited as an error too: a
+    preview that was refused can never be read back as a preview that passed.
+    """
     from k8s_aiops.cli import app
 
-    _patch_mcp(monkeypatch)
-    monkeypatch.setattr("k8s_aiops.cli.namespace.get_target_config", lambda t=None: None)
+    conn = _patch_mcp(monkeypatch)
     result = CliRunner().invoke(app, ["namespace", "delete", "kube-system", "--dry-run"])
 
     assert result.exit_code == 1
     assert "DRY-RUN" not in result.output
     assert "Refusing to delete namespace 'kube-system'" in result.output
+    conn.core.delete_namespace.assert_not_called()
+
+    db = sqlite3.connect(gov_home / "audit.db")
+    try:
+        assert db.execute("SELECT tool, status FROM audit_log").fetchall() == [
+            ("delete_namespace", "error")
+        ]
+    finally:
+        db.close()
+
+
+@pytest.mark.unit
+def test_cli_dry_run_refuses_a_self_lockout_namespace(gov_home, monkeypatch, tmp_path):
+    """The other refusal, reached the same way — and not overridable by --confirm."""
+    from k8s_aiops.cli import app
+
+    target = _kubeconfig(tmp_path, {"token": _sa_token("aiops")})
+    conn = _patch_mcp(monkeypatch, target)
+    result = CliRunner().invoke(
+        app, ["namespace", "delete", "aiops", "--dry-run", "--confirm"]
+    )
+
+    assert result.exit_code == 1
+    assert "DRY-RUN" not in result.output
+    assert "Refusing to delete namespace 'aiops'" in result.output
+    conn.core.delete_namespace.assert_not_called()
 
 
 @pytest.mark.unit
 def test_cli_dry_run_still_previews_an_ordinary_namespace(gov_home, monkeypatch):
+    """Exactness: the guard must not blanket-refuse, and the allowed preview
+    still renders the ordinary banner — now carrying the resolved payload."""
     from k8s_aiops.cli import app
 
-    _patch_mcp(monkeypatch)
-    monkeypatch.setattr("k8s_aiops.cli.namespace.get_target_config", lambda t=None: None)
+    conn = _patch_mcp(monkeypatch)
     result = CliRunner().invoke(app, ["namespace", "delete", "staging", "--dry-run"])
 
     assert result.exit_code == 0
     assert "DRY-RUN" in result.output
+    assert "name = staging" in result.output
+    conn.core.delete_namespace.assert_not_called()
 
 
 @pytest.mark.unit

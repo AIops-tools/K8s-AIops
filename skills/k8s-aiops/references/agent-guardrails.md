@@ -9,16 +9,32 @@ the tool now enforces them itself.
 The distinction matters. A guardrail in a prompt is a request. A guardrail in the
 harness is a guarantee. Anything below that we could move into the harness, we did.
 
-## What the tool now enforces — do not waste prompt budget on these
+## Authorization is not this tool's job — decide it where it belongs
+
+Whether a write should happen is your decision, or the account's. The tool does
+not gate it — there is no read-only switch and no approval prompt to configure.
+The two right places to control read vs write:
+
+- **The kubeconfig context you connect with.** Bind it to a ServiceAccount or
+  user whose RBAC grants only `get`/`list`/`watch`, and every write fails at the
+  apiserver — the only place the permission actually lives. No skill-side flag
+  can be argued around by a model, but a revoked RBAC verb cannot be. This is
+  strictly stronger than any in-process switch: it is enforced at the cluster.
+- **Your agent's system prompt.** If you want an observe-only session, tell the
+  model not to call the write tools (they are clearly tagged `[WRITE]`).
+
+What the tool *does* guarantee is that you can always see what happened:
+
+## What the tool enforces — do not waste prompt budget on these
 
 | You might be tempted to prompt | Why you don't need to |
 |---|---|
-| "Work read-only, never modify the cluster" | Set `K8S_READ_ONLY=1`. The 16 write tools are then **not registered at all** — `delete_pod`, `delete_deployment`, `delete_namespace`, `delete_job`, `scale_deployment`, `scale_statefulset`, `set_deployment_image`, `rollout_restart_deployment`, `rollout_undo_deployment`, `rollout_pause`, `rollout_resume`, `cordon_node`, `uncordon_node`, `drain_node`, `create_namespace`, `undo_apply` never appear in the tool list, so the model cannot call one even if it tries. Only the 39 read tools remain. The `@governed_tool` harness independently refuses non-`low` risk calls, so the CLI is covered too. |
+| "Log everything you do, over both MCP and the CLI" | Every operation is audited to `~/.k8s-aiops/audit.db` regardless of what the model says it did — and the CLI writes the same row the MCP path does, so there is no unaudited entry point. Reversible writes also record an undo token capturing the *prior* state. |
 | "Don't invent a value when a field is missing" | A field the apiserver did not return comes back as `null`, never as `""`. An unscheduled pod's `node` is `null`; a pod with no phase yet has `phase: null`; an object with no readable creation timestamp has `age: null`. Absent and empty are distinguishable in the payload. |
 | "Tell me if the output was cut off" | The limit-bearing reads return an envelope: `event_list` → `{"events": [...], "returned": N, "limit": L, "truncated": true/false}`, and `undo_list` → `{"undos": [...], "returned": N, "limit": L, "truncated": ...}`. Truncation is **measured** (one extra row is fetched), not guessed from `len(rows) == limit`. |
 | "Preserve the ordering / tell me what's most urgent" | `pod_health_rca` and `workload_readiness_rca` findings carry an explicit 1-based `rank`, worst-first, and each finding's `detail` cites the measured signal (the waiting reason, the restart count, the ready/desired ratio). Priority is in the payload, not implied by list position. |
-| "Confirm before anything destructive" | Destructive operations are `--dry-run`-able and require double confirmation at the CLI. Under the default secure-by-default policy, `high`/`critical` tiers require a named approver in `K8S_AUDIT_APPROVED_BY`. |
-| "Log what you did" | Every governed call is audited to `~/.k8s-aiops/audit.db` regardless of what the model says it did. Writes with a clean inverse also record an undo token (`undo_list` / `undo_apply`). |
+| "Confirm before anything destructive" | The destructive CLI commands (deployment/job/namespace delete, node cordon/drain, rollout undo) are `--dry-run`-able and require double confirmation. |
+| "Don't get stuck retrying" | The runaway guard trips a circuit breaker if the same call is hammered in a tight loop — a stuck agent is stopped rather than left to burn calls and time. It is a safety backstop, not an authorization gate. |
 
 ## What still needs a prompt
 
@@ -65,17 +81,20 @@ SCOPE AND IDENTIFIERS
 
 ## Recommended setup for a local model
 
+Start with a kubeconfig context that *cannot* write — a ServiceAccount whose
+RBAC grants only `get`/`list`/`watch` — verify, and widen its permission only
+when you trust the setup. RBAC is enforced at the apiserver, so a write fails at
+the cluster no matter what the model attempts:
+
 ```bash
-# Read-only until you trust the setup — this is enforced, not advisory.
-export K8S_READ_ONLY=1
+# Point KUBECONFIG at a read-only ServiceAccount context, then:
 k8s-aiops doctor
 ```
 
-Then, when you are ready to allow writes, unset it and set an approver so the
-high-risk tier has an accountable name on it:
+Optionally annotate the audit trail with who is operating and why — recorded on
+every row, never required:
 
 ```bash
-unset K8S_READ_ONLY
 export K8S_AUDIT_APPROVED_BY="your.name@example.com"
 export K8S_AUDIT_RATIONALE="incident INC-1234 — restart the stuck payments rollout"
 ```
@@ -97,11 +116,11 @@ export K8S_AUDIT_RATIONALE="incident INC-1234 — restart the stuck payments rol
   and no master password. (`k8s-aiops secret ...` lists Kubernetes *Secret
   resources* by name — it is not a credential manager.) The agent inherits the RBAC of the
   kubeconfig user. That makes RBAC your strongest guardrail — a read-only
-  ServiceAccount kubeconfig enforces read-only at the *cluster*, which is
-  stronger than `K8S_READ_ONLY=1` (that only removes the tools).
+  ServiceAccount kubeconfig enforces read-only at the *cluster*, the only place
+  the permission truly lives.
 - **`drain_node` is the most dangerous tool here.** It evicts pods cluster-wide
-  in effect, and its blast radius is not visible in its arguments. Keep it behind
-  an approver, or leave read-only mode on.
+  in effect, and its blast radius is not visible in its arguments. Keep it out of
+  the RBAC role you hand the agent unless you specifically intend node drains.
 - **Pod names are not stable.** A ReplicaSet-generated pod name changes on every
   rollout, so an id the model cached earlier in the conversation may already be
   gone. Prefer `deployment_get` / `rollout_status` over re-using a pod name.

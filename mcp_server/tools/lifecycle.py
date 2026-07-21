@@ -1,8 +1,8 @@
 """Write MCP tools: scale, rollout restart, delete pod/deployment.
 
-Every tool is wrapped with ``@governed_tool`` (the k8s-aiops harness): policy
-pre-check, budget/runaway guard, graduated-autonomy risk-tier gate, audit
-logging to ~/.k8s-aiops/audit.db, and undo-token recording. Tools with a clean
+Every tool is wrapped with ``@governed_tool`` (the k8s-aiops harness): audit
+logging to ~/.k8s-aiops/audit.db, a token/runaway budget guard, a descriptive
+risk-tier label on each audit row, and undo-token recording. Tools with a clean
 inverse pass an ``undo=`` lambda so the harness records a reversal descriptor
 (scale_deployment → scale back to previous_replicas). delete_* and
 rollout_restart have no safe inverse and record none.

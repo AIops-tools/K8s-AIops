@@ -10,8 +10,8 @@
 
 Governed Kubernetes operations for AI agents — **55 MCP tools**, every one wrapped
 with the bundled `@governed_tool` harness: a local unified audit log under
-`~/.k8s-aiops/`, policy engine, token/runaway budget guard, undo-token recording, and
-graduated-autonomy risk tiers. Coverage spans pods, deployments, statefulsets,
+`~/.k8s-aiops/`, a token/runaway budget guard, undo-token recording, and a
+descriptive risk-tier label on every audit row. Coverage spans pods, deployments, statefulsets,
 daemonsets, replicasets, jobs/cronjobs, services, ingresses, endpoints,
 configmaps, secrets (names/keys only), PVCs/PVs/storageclasses, nodes, namespaces,
 events, rollouts (status/history/undo/pause/resume/set-image), pod/node describe,
@@ -32,40 +32,25 @@ Any cluster a kubeconfig can reach: standard Kubernetes, **k3s**, **EKS**, **GKE
 **AKS**, kind, minikube. Authentication (client certs, tokens, EKS/GKE/AKS exec
 plugins) is delegated entirely to the kubeconfig.
 
-## Security: read-only mode
+## What this tool does, and does not, decide
 
-This tool is meant to be handed to an AI agent, so its safety story is enforced
-by the server rather than requested in a prompt:
+It delivers Kubernetes operations — reads and writes — accurately and
+efficiently, and records every one of them. It does **not** decide whether a
+write is allowed to happen. That is the agent's judgement, or the permission of
+the kubeconfig context / ServiceAccount you connect it with: point it at a
+context bound to a read-only RBAC role and the writes fail at the apiserver —
+the place that actually owns the permission.
 
-```bash
-export K8S_READ_ONLY=1
-```
+So there is no read-only switch, no policy file, no approval gate to configure.
+The one thing the tool guarantees is that nothing is silent: **every call, over
+MCP and over the CLI alike, lands an audit row** in `~/.k8s-aiops/audit.db`, and
+destructive writes still capture their before-state and record an inverse where
+one exists. The runaway budget guard is a safety backstop, not authorization.
 
-With that set, the **16 write tools are never registered**. An MCP client
-lists **39 tools instead of 55** — the writes are not hidden, not
-gated behind a flag, and not merely refused when called. They are absent from
-the session. A model cannot invoke a tool it was never offered, and cannot be
-argued into one.
-
-That distinction is the whole point. A tool that exists but refuses still invites
-retry loops and "I'll describe the call instead" behaviour from smaller models,
-and it leaves a reviewer trusting a promise. An absent tool is a fact you can
-check: connect, list the tools, and see that the writes are not there.
-
-Enforcement is two layers deep, so the switch cannot be sidestepped by changing
-entry point:
-
-| Layer | What it does | Covers |
-|---|---|---|
-| `@governed_tool` harness | refuses every non-read operation outright | MCP, CLI, and in-process callers |
-| MCP registration | write tools are removed from `list_tools()` | anything speaking MCP |
-
-Read operations are unaffected, and every call is still audited to
-`~/.k8s-aiops/audit.db`.
-
-> The read/write split is derived from each tool's declared `risk_level`, and a
-> test asserts that this never disagrees with the `[READ]`/`[WRITE]` tag in the
-> tool's own documentation — so a write can't quietly present itself as a read.
+> Each tool declares a `risk_level`, kept in agreement with its `[READ]`/`[WRITE]`
+> documentation tag by a test, and carried into the audit row as a descriptive
+> tier — so a reviewer can see at a glance that a row was a high-risk delete. It
+> is a label, not a gate.
 
 Running a smaller / local model? See
 [agent-guardrails.md](skills/k8s-aiops/references/agent-guardrails.md) — it lists

@@ -2,7 +2,8 @@
 
 Real execution is delegated to the ``@governed_tool``-wrapped functions in
 ``mcp_server.tools.undo`` so an applied undo is audited on the SAME governance
-path as any other write (the inverse tool it dispatches is itself re-gated).
+path as any other write (the inverse tool it dispatches is itself governed and
+audited).
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from k8s_aiops.cli._common import (
     cli_errors,
     console,
     double_confirm,
-    dry_run_print,
+    dry_run_preview,
 )
 
 undo_app = typer.Typer(
@@ -58,10 +59,12 @@ def undo_apply_cmd(
 
     if dry_run:
         preview = gov.undo_apply(undo_id=undo_id, dry_run=True, target=target)
-        dry_run_print(
+        would = preview.get("wouldApply") or {}
+        dry_run_preview(
+            preview,
             operation="undo_apply",
-            detail=f"inverse: {preview.get('wouldApply', {}).get('tool', '?')}",
-            parameters=preview.get("wouldApply", {}).get("params", {}),
+            detail=f"inverse: {would.get('tool', '?')}",
+            parameters=would.get("params"),
         )
         return
     double_confirm("apply undo", undo_id)
