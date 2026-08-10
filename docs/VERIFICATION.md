@@ -17,9 +17,30 @@ Kubernetes cluster, so the maturity claim is auditable rather than a vibe.
 
 ## Not yet live-verified ⚠️
 
-- The **diagnostics/RCA tools added in this release** (`pod_health_rca`,
+- ~~The **diagnostics/RCA tools added in this release** (`pod_health_rca`,
   `workload_readiness_rca`) are unit-tested against synthetic pod/workload rows
-  but have not been re-run against a live cluster.
+  but have not been re-run against a live cluster.~~ **Both closed 2026-08-04
+  against a real kind cluster (Kubernetes v1.34.0)** carrying deliberately
+  seeded faults — a CrashLoopBackOff deployment scaled to 2, an
+  ImagePullBackOff, a Pending pod requesting 64 CPU / 200Gi, and a healthy
+  control.
+  - `pod_health_rca` classified all four correctly over 6 pods, worst-first
+    with explicit ranks, and did **not** flag the healthy pod: image-pull
+    failure and CrashLoopBackOff as `critical` (with real restart counts),
+    unschedulable as `warning`.
+  - `workload_readiness_rca` flagged `badimage` 0/1 and `crasher` 0/2 as
+    under-replicated and left the two 1/1 deployments alone. Its **rollout-stuck
+    branch** was then exercised for real by shrinking `progressDeadlineSeconds`
+    until the stuck ReplicaSet produced a genuine
+    `Progressing=False (ProgressDeadlineExceeded)` — reported as `critical`.
+  - **A real defect surfaced**: the unschedulable finding reported only the
+    condition's *reason* ("Unschedulable") and dropped its *message* — the part
+    that actually answers the question ("0/1 nodes are available: 1 Insufficient
+    cpu, 1 Insufficient memory"). The finding told the operator to go run
+    `kubectl describe` for a fact the tool already held, which an agent with no
+    shell cannot do at all. The scheduler's message is now carried in both
+    `detail` and `cause`, with the bare category kept as the fallback when the
+    server supplies no message.
 - Managed control planes (EKS / GKE / AKS) — only kind and k3s-shaped clusters
   have been touched. Cloud-specific API differences are unexercised.
 

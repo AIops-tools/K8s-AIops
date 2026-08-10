@@ -16,12 +16,14 @@ from k8s_aiops.ops import diagnostics as diag
 # ─── pure pod heuristics ──────────────────────────────────────────────────────
 
 
-def _pod_row(name="p", ns="default", phase="Running", unschedulable=None, containers=None):
+def _pod_row(name="p", ns="default", phase="Running", unschedulable=None, containers=None,
+             unschedulable_detail=None):
     return {
         "name": name,
         "namespace": ns,
         "phase": phase,
         "unschedulable": unschedulable,
+        "unschedulableDetail": unschedulable_detail,
         "containers": containers or [],
     }
 
@@ -101,6 +103,33 @@ def test_pod_health_unschedulable_is_flagged():
     findings = diag.pod_health_findings(rows)["findings"]
     assert findings[0]["signal"] == "unschedulable"
     assert "Unschedulable" in findings[0]["detail"]
+
+
+@pytest.mark.unit
+def test_pod_health_unschedulable_carries_the_schedulers_own_message():
+    """The reason is the category; the message is the answer.
+
+    Verbatim from a real cluster: reason="Unschedulable" but
+    message="0/1 nodes are available: 1 Insufficient cpu, 1 Insufficient
+    memory". Reporting only the reason sent the operator to `kubectl describe`
+    for a fact already in hand — and an agent with no shell cannot go get it.
+    """
+    msg = "0/1 nodes are available: 1 Insufficient cpu, 1 Insufficient memory."
+    rows = [_pod_row(phase="Pending", unschedulable="Unschedulable",
+                     unschedulable_detail=msg)]
+    finding = diag.pod_health_findings(rows)["findings"][0]
+    assert "Insufficient cpu" in finding["detail"]
+    assert "Insufficient cpu" in finding["cause"]
+
+
+@pytest.mark.unit
+def test_pod_health_unschedulable_without_a_message_stays_clean():
+    """No scheduler message → no dangling separator, no invented text."""
+    finding = diag.pod_health_findings(
+        [_pod_row(phase="Pending", unschedulable="Unschedulable")]
+    )["findings"][0]
+    assert finding["detail"].endswith("(Unschedulable)")
+    assert finding["cause"] == "The scheduler cannot place this pod on any node."
 
 
 @pytest.mark.unit
@@ -220,6 +249,33 @@ def test_pod_to_row_extracts_states():
     assert c["waiting"] == "CrashLoopBackOff"
     assert c["lastTerminated"] == "OOMKilled"
     assert c["restarts"] == 4
+
+
+@pytest.mark.unit
+def test_pod_to_row_extracts_the_scheduler_message_from_the_condition():
+    """The object→row mapping must not drop V1PodCondition.message.
+
+    This is the layer the pure heuristics cannot cover: the row builder reads
+    the live V1Pod. A real unschedulable pod carries reason AND message, and
+    only the reason was being read.
+    """
+    msg = "0/1 nodes are available: 1 Insufficient cpu, 1 Insufficient memory."
+    pod = SimpleNamespace(
+        metadata=SimpleNamespace(name="big", namespace="lab"),
+        status=SimpleNamespace(
+            phase="Pending",
+            conditions=[
+                SimpleNamespace(
+                    type="PodScheduled", status="False",
+                    reason="Unschedulable", message=msg,
+                )
+            ],
+            container_statuses=[],
+        ),
+    )
+    row = diag.pod_to_row(pod)
+    assert row["unschedulable"] == "Unschedulable"
+    assert row["unschedulableDetail"] == msg
 
 
 @pytest.mark.unit

@@ -98,6 +98,21 @@ def _unschedulable_reason(conditions: Any) -> str | None:
     return None
 
 
+def _unschedulable_detail(conditions: Any) -> str | None:
+    """The scheduler's own explanation from PodScheduled=False, or None.
+
+    The ``reason`` is only the category ("Unschedulable"); the ``message`` is
+    the answer — "0/1 nodes are available: 1 Insufficient cpu, 1 Insufficient
+    memory". Reading the reason and dropping the message meant the finding told
+    the operator to go run ``kubectl describe`` for a fact the tool already had
+    in hand, which an agent without a shell cannot do at all.
+    """
+    for c in conditions or []:
+        if getattr(c, "type", None) == "PodScheduled" and getattr(c, "status", None) != "True":
+            return _s(getattr(c, "message", None), 300) or None
+    return None
+
+
 def pod_to_row(pod: Any) -> dict:
     """[TRANSFORM] Reduce a V1Pod to a normalized diagnostic row (pure)."""
     status = getattr(pod, "status", None)
@@ -117,6 +132,7 @@ def pod_to_row(pod: Any) -> dict:
         "namespace": _s(getattr(pod.metadata, "namespace", None), 64),
         "phase": _s(getattr(status, "phase", None), 32),
         "unschedulable": _unschedulable_reason(getattr(status, "conditions", None)),
+        "unschedulableDetail": _unschedulable_detail(getattr(status, "conditions", None)),
         "containers": containers,
     }
 
@@ -171,10 +187,19 @@ def _pod_findings(row: dict) -> list[dict]:
     where = f"{ns}/{name}"
     out: list[dict] = []
     if row.get("unschedulable"):
+        # Carry the scheduler's own message when it gave one — it names the
+        # actual blocker (insufficient cpu/memory, taints, no matching node),
+        # which is the whole question. Falling back to the bare category only
+        # when the message is absent.
+        sched_msg = row.get("unschedulableDetail")
+        detail = f"pod Pending — PodScheduled=False ({row['unschedulable']})"
+        if sched_msg:
+            detail = f"{detail}: {sched_msg}"
+        cause = "The scheduler cannot place this pod on any node."
+        if sched_msg:
+            cause = f"{cause} Scheduler says: {sched_msg}"
         out.append(_finding(
-            "warning", where, "unschedulable",
-            f"pod Pending — PodScheduled=False ({row['unschedulable']})",
-            "The scheduler cannot place this pod on any node.",
+            "warning", where, "unschedulable", detail, cause,
             f"kubectl describe pod {name} -n {ns}  # check resources/taints/affinity/PVCs"))
     for c in row.get("containers", []):
         out.extend(_container_findings(where, ns, name, c))
