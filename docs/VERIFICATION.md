@@ -19,7 +19,7 @@ Kubernetes cluster, so the maturity claim is auditable rather than a vibe.
 
 - ~~The **diagnostics/RCA tools added in this release** (`pod_health_rca`,
   `workload_readiness_rca`) are unit-tested against synthetic pod/workload rows
-  but have not been re-run against a live cluster.~~ **Both closed 2026-08-04
+  but have not been re-run against a live cluster.~~ **Both closed 2026-08-10
   against a real kind cluster (Kubernetes v1.34.0)** carrying deliberately
   seeded faults — a CrashLoopBackOff deployment scaled to 2, an
   ImagePullBackOff, a Pending pod requesting 64 CPU / 200Gi, and a healthy

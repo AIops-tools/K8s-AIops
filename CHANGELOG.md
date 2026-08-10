@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.11.0 — 2026-08-10
 
 ### Fixed
 - **An unschedulable pod now says *why*.** `pod_health_rca` read the `PodScheduled=False` condition's `reason` ("Unschedulable" — the category) and discarded its `message` ("0/1 nodes are available: 1 Insufficient cpu, 1 Insufficient memory" — the answer), then told the operator to run `kubectl describe` for a fact it already had in hand. An agent with no shell cannot go get it. The scheduler's own message is now carried in the finding's `detail` and `cause`; when the server supplies no message the bare category is used, with no dangling separator. Found on a real kind cluster (v1.34.0) with a deliberately unschedulable pod.
