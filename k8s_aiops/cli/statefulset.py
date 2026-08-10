@@ -11,6 +11,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    checked,
     cli_errors,
     get_connection,
 )
@@ -60,8 +61,8 @@ def statefulset_scale(
     """Scale a statefulset to a replica count."""
     console.print_json(
         json.dumps(
-            gov.scale_statefulset(
+            checked(gov.scale_statefulset(
                 name=name, replicas=replicas, namespace=namespace, target=target
-            )
+            ))
         )
     )

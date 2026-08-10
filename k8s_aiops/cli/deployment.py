@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -76,9 +77,9 @@ def deployment_scale(
     typer.confirm(f"Scale deployment '{name}' to {replicas} replica(s)?", abort=True)
     console.print_json(
         json.dumps(
-            gov.scale_deployment(
+            checked(gov.scale_deployment(
                 name=name, replicas=replicas, namespace=namespace, target=target
-            )
+            ))
         )
     )
 
@@ -106,7 +107,7 @@ def deployment_restart(
     typer.confirm(f"Rolling-restart deployment '{name}'?", abort=True)
     console.print_json(
         json.dumps(
-            gov.rollout_restart_deployment(name=name, namespace=namespace, target=target)
+            checked(gov.rollout_restart_deployment(name=name, namespace=namespace, target=target))
         )
     )
 
@@ -133,5 +134,5 @@ def deployment_delete(
         return
     double_confirm("delete", f"deployment {name}")
     console.print_json(
-        json.dumps(gov.delete_deployment(name=name, namespace=namespace, target=target))
+        json.dumps(checked(gov.delete_deployment(name=name, namespace=namespace, target=target)))
     )

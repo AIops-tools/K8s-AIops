@@ -12,6 +12,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     DryRunOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -51,7 +52,7 @@ def namespace_list(target: TargetOption = None) -> None:
 @cli_errors
 def namespace_create(name: str, target: TargetOption = None) -> None:
     """Create a namespace."""
-    console.print_json(json.dumps(gov.create_namespace(name=name, target=target)))
+    console.print_json(json.dumps(checked(gov.create_namespace(name=name, target=target))))
 
 
 @namespace_app.command("delete")
@@ -85,5 +86,5 @@ def namespace_delete(
     )
     double_confirm("delete", f"namespace {name} (and all its resources)")
     console.print_json(
-        json.dumps(gov.delete_namespace(name=name, target=target, confirm=confirm))
+        json.dumps(checked(gov.delete_namespace(name=name, target=target, confirm=confirm)))
     )

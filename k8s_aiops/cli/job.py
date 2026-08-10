@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -71,7 +72,7 @@ def job_delete(
         return
     double_confirm("delete", f"job {name}")
     console.print_json(
-        json.dumps(gov.delete_job(name=name, namespace=namespace, target=target))
+        json.dumps(checked(gov.delete_job(name=name, namespace=namespace, target=target)))
     )
 
 

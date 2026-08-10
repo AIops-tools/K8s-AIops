@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -106,5 +107,5 @@ def pod_delete(
         return
     double_confirm("delete", f"pod {name}")
     console.print_json(
-        json.dumps(gov.delete_pod(name=name, namespace=namespace, target=target))
+        json.dumps(checked(gov.delete_pod(name=name, namespace=namespace, target=target)))
     )

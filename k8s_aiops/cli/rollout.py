@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -77,9 +78,9 @@ def rollout_undo(
     double_confirm("roll back", f"deployment {name}")
     console.print_json(
         json.dumps(
-            gov.rollout_undo_deployment(
+            checked(gov.rollout_undo_deployment(
                 name=name, namespace=namespace, to_revision=to_revision, target=target
-            )
+            ))
         )
     )
 
@@ -91,7 +92,7 @@ def rollout_pause(
 ) -> None:
     """Pause a deployment's rollout."""
     console.print_json(
-        json.dumps(gov.rollout_pause(name=name, namespace=namespace, target=target))
+        json.dumps(checked(gov.rollout_pause(name=name, namespace=namespace, target=target)))
     )
 
 
@@ -102,7 +103,7 @@ def rollout_resume(
 ) -> None:
     """Resume a paused deployment's rollout."""
     console.print_json(
-        json.dumps(gov.rollout_resume(name=name, namespace=namespace, target=target))
+        json.dumps(checked(gov.rollout_resume(name=name, namespace=namespace, target=target)))
     )
 
 
@@ -118,12 +119,12 @@ def rollout_set_image(
     """Update a deployment container's image."""
     console.print_json(
         json.dumps(
-            gov.set_deployment_image(
+            checked(gov.set_deployment_image(
                 name=name,
                 container=container,
                 image=image,
                 namespace=namespace,
                 target=target,
-            )
+            ))
         )
     )

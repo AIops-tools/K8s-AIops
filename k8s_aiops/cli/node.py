@@ -11,6 +11,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     DryRunOption,
     TargetOption,
+    checked,
     cli_errors,
     double_confirm,
     dry_run_preview,
@@ -72,7 +73,7 @@ def node_drain(
         )
         return
     double_confirm("drain", f"node {name}")
-    console.print_json(json.dumps(gov.drain_node(name=name, target=target)))
+    console.print_json(json.dumps(checked(gov.drain_node(name=name, target=target))))
 
 
 @node_app.command("cordon")
@@ -91,11 +92,11 @@ def node_cordon(
         )
         return
     double_confirm("cordon", f"node {name}")
-    console.print_json(json.dumps(gov.cordon_node(name=name, target=target)))
+    console.print_json(json.dumps(checked(gov.cordon_node(name=name, target=target))))
 
 
 @node_app.command("uncordon")
 @cli_errors
 def node_uncordon(name: str, target: TargetOption = None) -> None:
     """Mark a node schedulable again."""
-    console.print_json(json.dumps(gov.uncordon_node(name=name, target=target)))
+    console.print_json(json.dumps(checked(gov.uncordon_node(name=name, target=target))))
