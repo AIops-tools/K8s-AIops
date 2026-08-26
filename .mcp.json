@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "k8s-aiops": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "k8s-aiops==0.12.0",
+        "k8s-aiops-mcp"
+      ]
+    }
+  }
+}
