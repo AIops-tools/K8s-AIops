@@ -68,7 +68,7 @@ k8s-aiops doctor          # or skip init — works with your current kube-contex
 Or as an OpenClaw plugin, which installs this skill and its MCP server together:
 
 ```bash
-openclaw plugins install clawhub:@aiops-tools/k8s-aiops
+openclaw plugins install clawhub:@zw008/k8s-aiops
 openclaw skills info k8s-aiops          # expect: Visible to model: yes
 ```
 
