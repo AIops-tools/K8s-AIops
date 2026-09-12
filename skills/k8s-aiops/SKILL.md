@@ -72,6 +72,8 @@ openclaw plugins install clawhub:@aiops-tools/k8s-aiops
 openclaw skills info k8s-aiops          # expect: Visible to model: yes
 ```
 
+Needs `uvx` on `PATH`: the MCP server is fetched with uv, pinned to this release.
+
 ## When to Use This Skill
 
 - List/inspect pods, deployments, services, nodes, namespaces and recent events
