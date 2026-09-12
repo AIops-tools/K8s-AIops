@@ -1,0 +1,20 @@
+{
+  "name": "@aiops-tools/k8s-aiops",
+  "version": "0.13.0",
+  "description": "Governed Kubernetes ops — 55 MCP tools with audit, budget, undo, risk-tier audit labels.",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://github.com/AIops-tools/K8s-AIops",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AIops-tools/K8s-AIops.git"
+  },
+  "openclaw": {
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2"
+    }
+  }
+}
