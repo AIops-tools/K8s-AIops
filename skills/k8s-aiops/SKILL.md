@@ -65,6 +65,13 @@ k8s-aiops init            # friendly wizard: register your kube contexts as targ
 k8s-aiops doctor          # or skip init — works with your current kube-context too
 ```
 
+Or as an OpenClaw plugin, which installs this skill and its MCP server together:
+
+```bash
+openclaw plugins install clawhub:@aiops-tools/k8s-aiops
+openclaw skills info k8s-aiops          # expect: Visible to model: yes
+```
+
 ## When to Use This Skill
 
 - List/inspect pods, deployments, services, nodes, namespaces and recent events
