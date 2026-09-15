@@ -1,6 +1,6 @@
 {
   "name": "@zw008/k8s-aiops",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "Governed Kubernetes ops — 55 MCP tools with audit, budget, undo, risk-tier audit labels.",
   "private": true,
   "license": "MIT",

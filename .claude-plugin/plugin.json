@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "k8s-aiops",
   "displayName": "k8s AIops",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "Governed Kubernetes ops — 55 MCP tools with audit, budget, undo, risk-tier audit labels.",
   "author": {
     "name": "Wei Zhou",
