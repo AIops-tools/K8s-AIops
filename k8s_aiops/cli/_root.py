@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from k8s_aiops.cli._common import NamespaceOption, TargetOption, cli_errors
+from k8s_aiops.cli._common import NamespaceOption, TargetOption, audited, cli_errors
 from k8s_aiops.cli.cluster import api_resources_cmd, cluster_info_cmd
 from k8s_aiops.cli.configmap import configmap_app, secret_app
 from k8s_aiops.cli.daemonset import daemonset_app
@@ -55,6 +55,7 @@ app.command("api-resources")(api_resources_cmd)
 
 @app.command("events")
 @cli_errors
+@audited
 def events_cmd(
     target: TargetOption = None,
     namespace: NamespaceOption = None,

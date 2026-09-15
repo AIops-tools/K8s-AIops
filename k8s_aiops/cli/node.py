@@ -11,6 +11,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     DryRunOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -26,6 +27,7 @@ console = Console()
 
 @node_app.command("list")
 @cli_errors
+@audited
 def node_list(target: TargetOption = None) -> None:
     """List nodes (name, status, roles, version, schedulable, age)."""
     conn, _ = get_connection(target)
@@ -43,6 +45,7 @@ def node_list(target: TargetOption = None) -> None:
 
 @node_app.command("describe")
 @cli_errors
+@audited
 def node_describe(name: str, target: TargetOption = None) -> None:
     """Describe a node: capacity, allocatable, conditions, taints."""
     conn, _ = get_connection(target)

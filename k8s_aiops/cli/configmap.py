@@ -12,6 +12,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
     join_opt,
@@ -25,6 +26,7 @@ console = Console()
 
 @configmap_app.command("list")
 @cli_errors
+@audited
 def configmap_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List configmaps (name, namespace, key count, age)."""
     conn, _ = get_connection(target)
@@ -39,6 +41,7 @@ def configmap_list(target: TargetOption = None, namespace: NamespaceOption = Non
 
 @configmap_app.command("get")
 @cli_errors
+@audited
 def configmap_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

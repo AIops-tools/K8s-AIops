@@ -183,3 +183,43 @@ def join_opt(values: list[str | None] | None, sep: str = ",") -> str:
     silently dropped.
     """
     return sep.join("?" if v is None else str(v) for v in (values or []))
+
+
+def audited(fn: Callable) -> Callable:
+    """Audit a CLI command that reaches the engine without calling an MCP tool.
+
+    MCP tools write their audit row through ``@governed_tool``; a CLI command that
+    called the ops layer directly used to write none, so an operator's CLI reads
+    left no trail. This runs the command through the same harness: one audit row per
+    invocation (tool = the command function, params = its options), plus the budget
+    and runaway guard. ``typer.Exit`` is how a command ends: exit code 0 is audited
+    ``ok``, a non-zero code ``error``, and the exit is re-raised unchanged. Any other
+    exception is audited ``error`` and propagates to ``cli_errors`` as before.
+    """
+    import functools as _functools
+
+    from k8s_aiops.governance import governed_tool
+
+    @_functools.wraps(fn)
+    def body(*args: Any, **kwargs: Any) -> Any:
+        try:
+            fn(*args, **kwargs)
+        except typer.Exit as exc:
+            code = exc.exit_code
+            outcome: dict[str, Any] = {"_exitCode": code}
+            if code:
+                outcome["error"] = f"command exited with code {code}"
+            return outcome
+        return None
+
+    governed = governed_tool(risk_level="low")(body)
+
+    @_functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = governed(*args, **kwargs)
+        if isinstance(result, dict) and "_exitCode" in result:
+            raise typer.Exit(result["_exitCode"])
+        return None
+
+    wrapper._is_audited_cli = True  # type: ignore[attr-defined]
+    return wrapper

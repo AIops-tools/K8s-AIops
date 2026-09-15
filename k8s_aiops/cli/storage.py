@@ -9,6 +9,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
 )
@@ -20,6 +21,7 @@ console = Console()
 
 @storage_app.command("pvc-list")
 @cli_errors
+@audited
 def pvc_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List persistent volume claims."""
     conn, _ = get_connection(target)
@@ -37,6 +39,7 @@ def pvc_list(target: TargetOption = None, namespace: NamespaceOption = None) -> 
 
 @storage_app.command("pvc-get")
 @cli_errors
+@audited
 def pvc_get(name: str, target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """Show detail for one PVC."""
     conn, _ = get_connection(target)
@@ -46,6 +49,7 @@ def pvc_get(name: str, target: TargetOption = None, namespace: NamespaceOption =
 
 @storage_app.command("pv-list")
 @cli_errors
+@audited
 def pv_list(target: TargetOption = None) -> None:
     """List persistent volumes."""
     conn, _ = get_connection(target)
@@ -62,6 +66,7 @@ def pv_list(target: TargetOption = None) -> None:
 
 @storage_app.command("class-list")
 @cli_errors
+@audited
 def storageclass_list(target: TargetOption = None) -> None:
     """List storage classes."""
     conn, _ = get_connection(target)

@@ -9,6 +9,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
 )
@@ -20,6 +21,7 @@ console = Console()
 
 @daemonset_app.command("list")
 @cli_errors
+@audited
 def daemonset_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List daemonsets (name, namespace, desired/ready/available, age)."""
     conn, _ = get_connection(target)
@@ -37,6 +39,7 @@ def daemonset_list(target: TargetOption = None, namespace: NamespaceOption = Non
 
 @daemonset_app.command("get")
 @cli_errors
+@audited
 def daemonset_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

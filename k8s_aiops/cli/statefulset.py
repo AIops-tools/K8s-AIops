@@ -11,6 +11,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     get_connection,
@@ -24,6 +25,7 @@ console = Console()
 
 @statefulset_app.command("list")
 @cli_errors
+@audited
 def statefulset_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List statefulsets (name, namespace, desired/ready/current, age)."""
     conn, _ = get_connection(target)
@@ -41,6 +43,7 @@ def statefulset_list(target: TargetOption = None, namespace: NamespaceOption = N
 
 @statefulset_app.command("get")
 @cli_errors
+@audited
 def statefulset_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

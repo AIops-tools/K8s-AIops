@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -28,6 +29,7 @@ console = Console()
 
 @rollout_app.command("status")
 @cli_errors
+@audited
 def rollout_status(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:
@@ -39,6 +41,7 @@ def rollout_status(
 
 @rollout_app.command("history")
 @cli_errors
+@audited
 def rollout_history(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

@@ -9,6 +9,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
 )
@@ -20,6 +21,7 @@ console = Console()
 
 @top_app.command("node")
 @cli_errors
+@audited
 def top_node(target: TargetOption = None) -> None:
     """CPU/memory usage per node."""
     conn, _ = get_connection(target)
@@ -37,6 +39,7 @@ def top_node(target: TargetOption = None) -> None:
 
 @top_app.command("pod")
 @cli_errors
+@audited
 def top_pod(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """CPU/memory usage per pod."""
     conn, _ = get_connection(target)

@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -27,6 +28,7 @@ console = Console()
 
 @deployment_app.command("list")
 @cli_errors
+@audited
 def deployment_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List deployments (name, namespace, desired/ready/available, age)."""
     conn, _ = get_connection(target)
@@ -44,6 +46,7 @@ def deployment_list(target: TargetOption = None, namespace: NamespaceOption = No
 
 @deployment_app.command("get")
 @cli_errors
+@audited
 def deployment_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

@@ -12,6 +12,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     DryRunOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -36,6 +37,7 @@ ConfirmProtectedOption = Annotated[
 
 @namespace_app.command("list")
 @cli_errors
+@audited
 def namespace_list(target: TargetOption = None) -> None:
     """List namespaces (name, phase, age)."""
     conn, _ = get_connection(target)

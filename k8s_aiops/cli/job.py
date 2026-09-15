@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -28,6 +29,7 @@ console = Console()
 
 @job_app.command("list")
 @cli_errors
+@audited
 def job_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List jobs (name, namespace, completions, succeeded/failed, age)."""
     conn, _ = get_connection(target)
@@ -45,6 +47,7 @@ def job_list(target: TargetOption = None, namespace: NamespaceOption = None) -> 
 
 @job_app.command("get")
 @cli_errors
+@audited
 def job_get(name: str, target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """Show detail for one job."""
     conn, _ = get_connection(target)
@@ -78,6 +81,7 @@ def job_delete(
 
 @cronjob_app.command("list")
 @cli_errors
+@audited
 def cronjob_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List cronjobs (name, namespace, schedule, suspend, active, age)."""
     conn, _ = get_connection(target)
@@ -95,6 +99,7 @@ def cronjob_list(target: TargetOption = None, namespace: NamespaceOption = None)
 
 @cronjob_app.command("get")
 @cli_errors
+@audited
 def cronjob_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

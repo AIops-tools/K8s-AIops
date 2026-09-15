@@ -9,6 +9,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
 )
@@ -20,6 +21,7 @@ console = Console()
 
 @service_app.command("list")
 @cli_errors
+@audited
 def service_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List services (name, namespace, type, cluster IP, ports)."""
     conn, _ = get_connection(target)

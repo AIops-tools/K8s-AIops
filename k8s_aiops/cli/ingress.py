@@ -9,6 +9,7 @@ from rich.table import Table
 from k8s_aiops.cli._common import (
     NamespaceOption,
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
     join_opt,
@@ -21,6 +22,7 @@ console = Console()
 
 @ingress_app.command("list")
 @cli_errors
+@audited
 def ingress_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List ingresses (name, namespace, class, hosts, age)."""
     conn, _ = get_connection(target)
@@ -35,6 +37,7 @@ def ingress_list(target: TargetOption = None, namespace: NamespaceOption = None)
 
 @ingress_app.command("get")
 @cli_errors
+@audited
 def ingress_get(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:

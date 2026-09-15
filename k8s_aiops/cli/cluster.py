@@ -7,6 +7,7 @@ from rich.table import Table
 
 from k8s_aiops.cli._common import (
     TargetOption,
+    audited,
     cli_errors,
     get_connection,
     join_opt,
@@ -17,6 +18,7 @@ console = Console()
 
 
 @cli_errors
+@audited
 def cluster_info_cmd(target: TargetOption = None) -> None:
     """Show a friendly cluster health summary (version, node/ns counts)."""
     conn, _ = get_connection(target)
@@ -25,6 +27,7 @@ def cluster_info_cmd(target: TargetOption = None) -> None:
 
 
 @cli_errors
+@audited
 def api_resources_cmd(target: TargetOption = None) -> None:
     """List available API groups and versions."""
     conn, _ = get_connection(target)

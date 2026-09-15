@@ -12,6 +12,7 @@ from k8s_aiops.cli._common import (
     DryRunOption,
     NamespaceOption,
     TargetOption,
+    audited,
     checked,
     cli_errors,
     double_confirm,
@@ -27,6 +28,7 @@ console = Console()
 
 @pod_app.command("list")
 @cli_errors
+@audited
 def pod_list(target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """List pods (name, namespace, phase, ready, restarts, node, age)."""
     conn, _ = get_connection(target)
@@ -44,6 +46,7 @@ def pod_list(target: TargetOption = None, namespace: NamespaceOption = None) -> 
 
 @pod_app.command("get")
 @cli_errors
+@audited
 def pod_get(name: str, target: TargetOption = None, namespace: NamespaceOption = None) -> None:
     """Show detail for one pod."""
     conn, _ = get_connection(target)
@@ -53,6 +56,7 @@ def pod_get(name: str, target: TargetOption = None, namespace: NamespaceOption =
 
 @pod_app.command("describe")
 @cli_errors
+@audited
 def pod_describe(
     name: str, target: TargetOption = None, namespace: NamespaceOption = None
 ) -> None:
@@ -74,6 +78,7 @@ def pod_describe(
 
 @pod_app.command("logs")
 @cli_errors
+@audited
 def pod_logs(
     name: str,
     target: TargetOption = None,
