@@ -1,7 +1,7 @@
 """``k8s-aiops undo`` — list recorded undo tokens and apply them.
 
 Real execution is delegated to the ``@governed_tool``-wrapped functions in
-``mcp_server.tools.undo`` so an applied undo is audited on the SAME governance
+``k8s_aiops.mcp_server.tools.undo`` so an applied undo is audited on the SAME governance
 path as any other write (the inverse tool it dispatches is itself governed and
 audited).
 """
@@ -39,7 +39,7 @@ def undo_list_cmd(
     target: TargetOption = None,
 ) -> None:
     """List recorded, not-yet-applied undo tokens."""
-    from mcp_server.tools import undo as gov
+    from k8s_aiops.mcp_server.tools import undo as gov
 
     result = gov.undo_list(limit=limit, target=target)
     console.print_json(json.dumps(result))
@@ -56,7 +56,7 @@ def undo_apply_cmd(
     undo_id: UndoIdArg, target: TargetOption = None, dry_run: DryRunOption = False
 ) -> None:
     """Apply a recorded undo (dispatches its inverse tool; dry-run + confirm)."""
-    from mcp_server.tools import undo as gov
+    from k8s_aiops.mcp_server.tools import undo as gov
 
     if dry_run:
         preview = gov.undo_apply(undo_id=undo_id, dry_run=True, target=target)

@@ -18,8 +18,8 @@ from k8s_aiops.cli._common import (
     dry_run_preview,
     get_connection,
 )
+from k8s_aiops.mcp_server.tools import nodes as gov
 from k8s_aiops.ops import describe, nodes
-from mcp_server.tools import nodes as gov
 
 node_app = typer.Typer(help="Node operations.", no_args_is_help=True)
 console = Console()

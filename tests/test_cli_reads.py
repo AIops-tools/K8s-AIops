@@ -94,7 +94,7 @@ def test_cli_node_describe_prints_taints(monkeypatch):
 @pytest.mark.unit
 def test_cli_node_uncordon_calls_gov(monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import nodes as gov
+    from k8s_aiops.mcp_server.tools import nodes as gov
 
     _patch_conn(monkeypatch, "k8s_aiops.cli.node")
     monkeypatch.setattr(

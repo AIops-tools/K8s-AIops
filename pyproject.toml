@@ -31,10 +31,10 @@ dev = [
 
 [project.scripts]
 k8s-aiops = "k8s_aiops.cli:app"
-k8s-aiops-mcp = "mcp_server.server:main"
+k8s-aiops-mcp = "k8s_aiops.mcp_server.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["k8s_aiops", "mcp_server"]
+packages = ["k8s_aiops"]
 
 [tool.ruff]
 line-length = 100
@@ -50,7 +50,7 @@ select = ["E", "F", "I", "N", "W", "UP"]
 "k8s_aiops/governance/*.py" = ["E501", "N818"]
 # MCP server files are reflected by FastMCP/Pydantic; PEP 604 unions (X | None)
 # crash on older mcp/pydantic, so they intentionally use Optional[X].
-"mcp_server/**/*.py" = ["UP007", "UP045"]
+"k8s_aiops/mcp_server/**/*.py" = ["UP007", "UP045"]
 # The MCP entry keeps an explicit Python-version guard even though the declared
 # minimum is already 3.11.
 "k8s_aiops/cli/_root.py" = ["UP036"]

@@ -20,8 +20,8 @@ from k8s_aiops.cli._common import (
     get_connection,
     get_target_config,
 )
+from k8s_aiops.mcp_server.tools import namespaces as gov
 from k8s_aiops.ops import namespaces
-from mcp_server.tools import namespaces as gov
 
 namespace_app = typer.Typer(help="Namespace operations.", no_args_is_help=True)
 console = Console()

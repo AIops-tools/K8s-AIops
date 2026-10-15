@@ -20,8 +20,8 @@ from k8s_aiops.cli._common import (
     get_connection,
     join_opt,
 )
+from k8s_aiops.mcp_server.tools import rollout as gov
 from k8s_aiops.ops import rollout
-from mcp_server.tools import rollout as gov
 
 rollout_app = typer.Typer(help="Deployment rollout operations.", no_args_is_help=True)
 console = Console()

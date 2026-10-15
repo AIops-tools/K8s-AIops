@@ -97,22 +97,22 @@ def test_all_modules_import():
         "k8s_aiops.cli.top",
         "k8s_aiops.cli.cluster",
         "k8s_aiops.cli.diagnostics",
-        "mcp_server.server",
-        "mcp_server._shared",
-        "mcp_server.tools.workloads",
-        "mcp_server.tools.lifecycle",
-        "mcp_server.tools.nodes",
-        "mcp_server.tools.namespaces",
-        "mcp_server.tools.controllers",
-        "mcp_server.tools.batch",
-        "mcp_server.tools.config_resources",
-        "mcp_server.tools.storage",
-        "mcp_server.tools.networking",
-        "mcp_server.tools.describe",
-        "mcp_server.tools.rollout",
-        "mcp_server.tools.metrics",
-        "mcp_server.tools.cluster",
-        "mcp_server.tools.diagnostics",
+        "k8s_aiops.mcp_server.server",
+        "k8s_aiops.mcp_server._shared",
+        "k8s_aiops.mcp_server.tools.workloads",
+        "k8s_aiops.mcp_server.tools.lifecycle",
+        "k8s_aiops.mcp_server.tools.nodes",
+        "k8s_aiops.mcp_server.tools.namespaces",
+        "k8s_aiops.mcp_server.tools.controllers",
+        "k8s_aiops.mcp_server.tools.batch",
+        "k8s_aiops.mcp_server.tools.config_resources",
+        "k8s_aiops.mcp_server.tools.storage",
+        "k8s_aiops.mcp_server.tools.networking",
+        "k8s_aiops.mcp_server.tools.describe",
+        "k8s_aiops.mcp_server.tools.rollout",
+        "k8s_aiops.mcp_server.tools.metrics",
+        "k8s_aiops.mcp_server.tools.cluster",
+        "k8s_aiops.mcp_server.tools.diagnostics",
     ):
         importlib.import_module(name)
 
@@ -198,7 +198,7 @@ def test_cli_leaf_help_triggers_lazy_imports():
 
 @pytest.mark.unit
 def test_mcp_list_tools_exposes_expected_tools():
-    from mcp_server.server import mcp
+    from k8s_aiops.mcp_server.server import mcp
 
     tools = asyncio.run(mcp.list_tools())
     names = {t.name for t in tools}
@@ -208,7 +208,7 @@ def test_mcp_list_tools_exposes_expected_tools():
 @pytest.mark.unit
 def test_registered_tool_count_is_pinned():
     """Drift guard: the advertised tool count must match the registry."""
-    from mcp_server import _shared
+    from k8s_aiops.mcp_server import _shared
 
     assert len(_shared.mcp._tool_manager._tools) == 55, (
         "tool count changed — update README/SKILL/server.json too"
@@ -218,7 +218,7 @@ def test_registered_tool_count_is_pinned():
 @pytest.mark.unit
 def test_every_mcp_tool_is_governed_by_harness():
     """Every registered tool callable must carry the @governed_tool marker."""
-    from mcp_server import _shared
+    from k8s_aiops.mcp_server import _shared
 
     tool_objs = _shared.mcp._tool_manager._tools
     assert EXPECTED_TOOLS <= set(tool_objs), "tool registry incomplete"
@@ -247,7 +247,7 @@ def _mock_conn():
 def test_scale_records_undo_to_previous_replicas(monkeypatch):
     """scale_deployment records a scale-back-to-previous inverse with _undo_id."""
     import k8s_aiops.governance.undo as undo_mod
-    from mcp_server.tools import lifecycle as life_tools
+    from k8s_aiops.mcp_server.tools import lifecycle as life_tools
 
     conn = _mock_conn()
     monkeypatch.setattr(life_tools, "_get_connection", lambda target=None: conn)
@@ -273,7 +273,7 @@ def test_scale_records_undo_to_previous_replicas(monkeypatch):
 def test_cordon_records_uncordon_inverse(monkeypatch):
     """cordon_node records an uncordon_node inverse via the harness."""
     import k8s_aiops.governance.undo as undo_mod
-    from mcp_server.tools import nodes as node_tools
+    from k8s_aiops.mcp_server.tools import nodes as node_tools
 
     conn = _mock_conn()
     monkeypatch.setattr(node_tools, "_get_connection", lambda target=None: conn)
@@ -354,7 +354,7 @@ def test_risk_level_agrees_with_read_write_docstring_tag():
     16 such mislabels line-wide once, so it is kept even though read-only mode
     (its original motivation) is gone.
     """
-    from mcp_server import server
+    from k8s_aiops.mcp_server import server
 
     untagged, mismatched = [], []
     for name, tool in server.mcp._tool_manager._tools.items():

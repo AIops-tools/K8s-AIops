@@ -85,7 +85,7 @@ under `k8s_aiops.governance`.
 ## Static Analysis
 
 ```bash
-uvx bandit -r k8s_aiops/ mcp_server/
+uvx bandit -r k8s_aiops/
 ```
 
 ## Supported Versions

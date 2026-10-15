@@ -108,5 +108,5 @@ installed entry point — it does not re-resolve PyPI at launch.
 ## Static analysis
 
 ```bash
-uvx bandit -r k8s_aiops/ mcp_server/
+uvx bandit -r k8s_aiops/
 ```

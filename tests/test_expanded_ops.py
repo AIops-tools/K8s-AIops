@@ -295,7 +295,7 @@ def test_set_deployment_image_unknown_container_errors():
 def test_set_deployment_image_records_undo_to_previous(monkeypatch):
     """The MCP wrapper records an inverse restoring the captured previous image."""
     import k8s_aiops.governance.undo as undo_mod
-    from mcp_server.tools import rollout as rollout_tools
+    from k8s_aiops.mcp_server.tools import rollout as rollout_tools
 
     conn = MagicMock()
     conn.default_namespace.return_value = "default"

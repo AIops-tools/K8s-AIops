@@ -132,7 +132,7 @@ def test_real_write_tool_persists_priorstate_undo(gov_home, monkeypatch):
     )
     conn.apps.patch_namespaced_deployment_scale.return_value = None
 
-    from mcp_server.tools import lifecycle as gov
+    from k8s_aiops.mcp_server.tools import lifecycle as gov
 
     monkeypatch.setattr(gov, "_get_connection", lambda target=None: conn)
     result = gov.scale_deployment(name="web", replicas=5, namespace="prod")

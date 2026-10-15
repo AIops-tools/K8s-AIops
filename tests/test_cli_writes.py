@@ -1,7 +1,7 @@
 """CLI write path — dry-run previews and confirmed writes, both governed.
 
 The CLI write commands delegate execution to the ``@governed_tool`` functions
-in ``mcp_server.tools``. These tests drive a write command PAST the confirm
+in ``k8s_aiops.mcp_server.tools``. These tests drive a write command PAST the confirm
 prompts (double for high-risk delete, single for medium-risk scale/restart)
 and assert the call really went through the governed path (audit row on disk)
 — the regression test for the "CLI writes were unaudited" line-wide fix.
@@ -60,7 +60,7 @@ def test_cli_deployment_delete_dry_run_reads_and_audits_but_never_writes(gov_hom
     from k8s_aiops.cli import app
 
     conn = _mock_conn()
-    import mcp_server.tools.lifecycle as gov_lifecycle
+    import k8s_aiops.mcp_server.tools.lifecycle as gov_lifecycle
 
     monkeypatch.setattr(gov_lifecycle, "_get_connection", lambda target=None: conn)
     result = CliRunner().invoke(app, ["deployment", "delete", "web", "--dry-run"])
@@ -80,7 +80,7 @@ def test_cli_deployment_delete_confirmed_goes_through_governance(gov_home, monke
     from k8s_aiops.cli import app
 
     conn = _mock_conn()
-    import mcp_server.tools.lifecycle as gov_lifecycle
+    import k8s_aiops.mcp_server.tools.lifecycle as gov_lifecycle
 
     monkeypatch.setattr(gov_lifecycle, "_get_connection", lambda target=None: conn)
     result = CliRunner().invoke(app, ["deployment", "delete", "web"], input="y\ny\n")
@@ -94,7 +94,7 @@ def test_cli_deployment_delete_aborts_without_double_confirm(gov_home, monkeypat
     from k8s_aiops.cli import app
 
     conn = _mock_conn()
-    import mcp_server.tools.lifecycle as gov_lifecycle
+    import k8s_aiops.mcp_server.tools.lifecycle as gov_lifecycle
 
     monkeypatch.setattr(gov_lifecycle, "_get_connection", lambda target=None: conn)
     result = CliRunner().invoke(app, ["deployment", "delete", "web"], input="y\nn\n")
@@ -111,7 +111,7 @@ def _patch_conn(monkeypatch) -> MagicMock:
     conn.apps.read_namespaced_deployment_scale.return_value = SimpleNamespace(
         spec=SimpleNamespace(replicas=3)
     )
-    import mcp_server.tools.lifecycle as gov_lifecycle
+    import k8s_aiops.mcp_server.tools.lifecycle as gov_lifecycle
 
     monkeypatch.setattr(gov_lifecycle, "_get_connection", lambda target=None: conn)
     return conn
@@ -206,7 +206,7 @@ def _patch_gov(monkeypatch, module) -> MagicMock:
 @pytest.mark.unit
 def test_cli_node_drain_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import nodes as gov
+    from k8s_aiops.mcp_server.tools import nodes as gov
 
     conn = _patch_gov(monkeypatch, gov)
     result = CliRunner().invoke(app, ["node", "drain", "node-a", "--dry-run"])
@@ -221,7 +221,7 @@ def test_cli_node_drain_dry_run_reads_and_audits_but_never_writes(gov_home, monk
 @pytest.mark.unit
 def test_cli_node_cordon_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import nodes as gov
+    from k8s_aiops.mcp_server.tools import nodes as gov
 
     conn = _patch_gov(monkeypatch, gov)
     result = CliRunner().invoke(app, ["node", "cordon", "node-a", "--dry-run"])
@@ -234,7 +234,7 @@ def test_cli_node_cordon_dry_run_reads_and_audits_but_never_writes(gov_home, mon
 @pytest.mark.unit
 def test_cli_pod_delete_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import lifecycle as gov
+    from k8s_aiops.mcp_server.tools import lifecycle as gov
 
     conn = _patch_gov(monkeypatch, gov)
     result = CliRunner().invoke(app, ["pod", "delete", "web-1", "--dry-run"])
@@ -247,7 +247,7 @@ def test_cli_pod_delete_dry_run_reads_and_audits_but_never_writes(gov_home, monk
 @pytest.mark.unit
 def test_cli_job_delete_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import batch as gov
+    from k8s_aiops.mcp_server.tools import batch as gov
 
     conn = _patch_gov(monkeypatch, gov)
     result = CliRunner().invoke(app, ["job", "delete", "backup", "--dry-run"])
@@ -260,7 +260,7 @@ def test_cli_job_delete_dry_run_reads_and_audits_but_never_writes(gov_home, monk
 @pytest.mark.unit
 def test_cli_namespace_delete_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     conn = _patch_gov(monkeypatch, gov)
     monkeypatch.setattr(gov, "_get_target_config", lambda t=None: None)
@@ -274,7 +274,7 @@ def test_cli_namespace_delete_dry_run_reads_and_audits_but_never_writes(gov_home
 @pytest.mark.unit
 def test_cli_rollout_undo_dry_run_reads_and_audits_but_never_writes(gov_home, monkeypatch):
     from k8s_aiops.cli import app
-    from mcp_server.tools import rollout as gov
+    from k8s_aiops.mcp_server.tools import rollout as gov
 
     conn = _patch_gov(monkeypatch, gov)
     result = CliRunner().invoke(app, ["rollout", "undo", "web", "--dry-run"])

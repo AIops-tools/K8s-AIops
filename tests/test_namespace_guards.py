@@ -263,7 +263,7 @@ def gov_home(tmp_path, monkeypatch):
 
 def _patch_mcp(monkeypatch, target=None) -> MagicMock:
     """Point the MCP namespace tool at a mock client and a chosen target config."""
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     conn = _conn(target)
     monkeypatch.setattr(gov, "_get_connection", lambda t=None: conn)
@@ -273,7 +273,7 @@ def _patch_mcp(monkeypatch, target=None) -> MagicMock:
 
 @pytest.mark.unit
 def test_mcp_delete_refuses_protected_namespace(gov_home, monkeypatch):
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     conn = _patch_mcp(monkeypatch)
     result = gov.delete_namespace(name="kube-system")
@@ -283,7 +283,7 @@ def test_mcp_delete_refuses_protected_namespace(gov_home, monkeypatch):
 
 @pytest.mark.unit
 def test_mcp_delete_allows_protected_namespace_with_confirm(gov_home, monkeypatch):
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     conn = _patch_mcp(monkeypatch)
     result = gov.delete_namespace(name="kube-system", confirm=True)
@@ -295,7 +295,7 @@ def test_mcp_delete_allows_protected_namespace_with_confirm(gov_home, monkeypatc
 def test_mcp_dry_run_reports_the_refusal_instead_of_a_green_preview(gov_home, monkeypatch):
     """The bug this guard shape prevents: a preview that promises a delete the
     real call would reject. The guard runs BEFORE the dry_run early return."""
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     conn = _patch_mcp(monkeypatch)
     result = gov.delete_namespace(name="kube-system", dry_run=True)
@@ -307,7 +307,7 @@ def test_mcp_dry_run_reports_the_refusal_instead_of_a_green_preview(gov_home, mo
 
 @pytest.mark.unit
 def test_mcp_dry_run_reports_self_lockout(gov_home, monkeypatch, tmp_path):
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     target = _kubeconfig(tmp_path, {"token": _sa_token("aiops")})
     conn = _patch_mcp(monkeypatch, target)
@@ -321,7 +321,7 @@ def test_mcp_dry_run_reports_self_lockout(gov_home, monkeypatch, tmp_path):
 @pytest.mark.unit
 def test_mcp_dry_run_still_previews_an_ordinary_namespace(gov_home, monkeypatch, tmp_path):
     """Exactness on the preview path too — the guard must not blanket-refuse."""
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     target = _kubeconfig(tmp_path, {"token": _sa_token("aiops")})
     conn = _patch_mcp(monkeypatch, target)
@@ -333,7 +333,7 @@ def test_mcp_dry_run_still_previews_an_ordinary_namespace(gov_home, monkeypatch,
 
 @pytest.mark.unit
 def test_mcp_dry_run_preview_honours_confirm(gov_home, monkeypatch):
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     _patch_mcp(monkeypatch)
     result = gov.delete_namespace(name="kube-system", dry_run=True, confirm=True)
@@ -348,7 +348,7 @@ def test_refused_delete_is_audited_as_an_error(gov_home, monkeypatch):
     ``@tool_errors`` flattened into an ``{"error": ...}`` dict is a failed call,
     so a refused delete can never be read back as a delete that happened.
     """
-    from mcp_server.tools import namespaces as gov
+    from k8s_aiops.mcp_server.tools import namespaces as gov
 
     _patch_mcp(monkeypatch)
     gov.delete_namespace(name="kube-system")

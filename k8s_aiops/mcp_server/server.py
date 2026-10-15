@@ -1,6 +1,6 @@
 """MCP server wrapping k8s-aiops operations (stdio transport).
 
-Thin adapter layer: each ``@mcp.tool()`` function (in ``mcp_server/tools/``)
+Thin adapter layer: each ``@mcp.tool()`` function (in ``k8s_aiops/mcp_server/tools/``)
 delegates to the ``k8s_aiops`` ops package and is wrapped with the k8s-aiops
 ``@governed_tool`` harness (audit / budget / undo / risk-tier).
 
@@ -14,12 +14,12 @@ License: MIT
 import logging
 import os
 
-from mcp_server._annotations import apply_risk_annotations
-from mcp_server._shared import _safe_error, mcp, tool_errors
+from k8s_aiops.mcp_server._annotations import apply_risk_annotations
+from k8s_aiops.mcp_server._shared import _safe_error, mcp, tool_errors
 
 # Importing the tool modules registers every @mcp.tool() onto the shared
 # `mcp` instance. Order does not matter; each module is self-contained.
-from mcp_server.tools import (  # noqa: F401 — side effects
+from k8s_aiops.mcp_server.tools import (  # noqa: F401 — side effects
     batch,
     cluster,
     config_resources,

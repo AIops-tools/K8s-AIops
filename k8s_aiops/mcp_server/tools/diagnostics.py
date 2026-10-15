@@ -5,15 +5,15 @@ objects once and hands normalized rows to a pure analysis function in
 ``k8s_aiops.ops.diagnostics`` — so the heuristics stay unit-testable without a
 live cluster, and the collection stays here where the connection is. The CLI
 layer reuses ``collect_pod_rows`` / ``collect_workload_rows`` from this module
-(the same CLI→mcp_server reuse the write commands already use).
+(the same CLI→k8s_aiops.mcp_server reuse the write commands already use).
 """
 
 from typing import Any, Optional
 
 from k8s_aiops.governance import governed_tool
+from k8s_aiops.mcp_server._shared import _get_connection, mcp, tool_errors
 from k8s_aiops.ops import diagnostics as diag
 from k8s_aiops.ops._shared import call
-from mcp_server._shared import _get_connection, mcp, tool_errors
 
 # (kind, namespaced list fn attr, all-namespaces list fn attr, path segment).
 _WORKLOAD_KINDS = (

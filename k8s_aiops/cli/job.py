@@ -19,8 +19,8 @@ from k8s_aiops.cli._common import (
     dry_run_preview,
     get_connection,
 )
+from k8s_aiops.mcp_server.tools import batch as gov
 from k8s_aiops.ops import batch
-from mcp_server.tools import batch as gov
 
 job_app = typer.Typer(help="Job operations.", no_args_is_help=True)
 cronjob_app = typer.Typer(help="CronJob operations.", no_args_is_help=True)

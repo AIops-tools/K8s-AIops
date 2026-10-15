@@ -317,7 +317,7 @@ def _crashloop_pod():
 
 @pytest.mark.unit
 def test_pod_health_rca_is_governed_and_collects(monkeypatch):
-    from mcp_server.tools import diagnostics as diag_tools
+    from k8s_aiops.mcp_server.tools import diagnostics as diag_tools
 
     assert diag_tools.pod_health_rca._is_governed_tool is True
 
@@ -334,7 +334,7 @@ def test_pod_health_rca_is_governed_and_collects(monkeypatch):
 
 @pytest.mark.unit
 def test_workload_readiness_rca_is_governed_and_collects(monkeypatch):
-    from mcp_server.tools import diagnostics as diag_tools
+    from k8s_aiops.mcp_server.tools import diagnostics as diag_tools
 
     assert diag_tools.workload_readiness_rca._is_governed_tool is True
 

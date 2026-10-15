@@ -13,8 +13,8 @@ the undo lambdas are guarded so a preview never records an undo descriptor.
 from typing import Optional
 
 from k8s_aiops.governance import governed_tool
+from k8s_aiops.mcp_server._shared import _get_connection, mcp, tool_errors
 from k8s_aiops.ops import rollout as ops
-from mcp_server._shared import _get_connection, mcp, tool_errors
 
 
 @mcp.tool()

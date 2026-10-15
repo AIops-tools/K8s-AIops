@@ -16,8 +16,8 @@ from k8s_aiops.cli._common import (
     cli_errors,
     get_connection,
 )
+from k8s_aiops.mcp_server.tools import controllers as gov
 from k8s_aiops.ops import controllers
-from mcp_server.tools import controllers as gov
 
 statefulset_app = typer.Typer(help="StatefulSet operations.", no_args_is_help=True)
 console = Console()

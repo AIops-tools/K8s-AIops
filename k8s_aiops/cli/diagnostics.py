@@ -7,8 +7,8 @@ from rich.console import Console
 from rich.table import Table
 
 from k8s_aiops.cli._common import NamespaceOption, TargetOption, cli_errors, get_connection
+from k8s_aiops.mcp_server.tools import diagnostics as gov
 from k8s_aiops.ops import diagnostics as diag
-from mcp_server.tools import diagnostics as gov
 
 diagnose_app = typer.Typer(
     help="Read-only diagnostics / RCA over the cluster.", no_args_is_help=True

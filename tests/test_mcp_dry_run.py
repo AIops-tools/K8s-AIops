@@ -20,7 +20,7 @@ import pytest
 import k8s_aiops.governance.audit as audit_mod
 import k8s_aiops.governance.policy as policy_mod
 import k8s_aiops.governance.undo as undo_mod
-from mcp_server.tools import batch, controllers, lifecycle, namespaces, nodes, rollout
+from k8s_aiops.mcp_server.tools import batch, controllers, lifecycle, namespaces, nodes, rollout
 
 
 def _reset_singletons() -> None:
