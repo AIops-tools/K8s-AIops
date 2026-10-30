@@ -1,6 +1,8 @@
 <!-- mcp-name: io.github.AIops-tools/k8s-aiops -->
 # k8s-aiops
 
+> **Audit availability:** Real writes require a committed `pending` audit row and stop before contacting the platform if storage is unavailable. Reads and previews may continue with a warning; new audit rows store outcome summaries rather than full responses.
+
 > **Disclaimer**: This is a community-maintained open-source project and is **not
 > affiliated with, endorsed by, or sponsored by the Cloud Native Computing
 > Foundation, the Kubernetes project, or k3s/Rancher.** "Kubernetes" and "k3s" are

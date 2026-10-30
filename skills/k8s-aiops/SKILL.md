@@ -30,6 +30,8 @@ compatibility: >
 
 # k8s AIops
 
+> **Audit availability:** Real writes require a durable audit intent. Reads and previews can continue if audit storage fails; check the warning and audit health before relying on their audit trail.
+
 > **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by the Cloud Native Computing Foundation, the Kubernetes project, or k3s/Rancher.** "Kubernetes" and "k3s" are trademarks of their respective owners. Source code is publicly auditable at [github.com/AIops-tools/K8s-AIops](https://github.com/AIops-tools/K8s-AIops) under the MIT license.
 
 Governed Kubernetes operations — **55 MCP tools**, every one wrapped with the bundled `@governed_tool` harness: a local unified audit log under `~/.k8s-aiops/`, a token/runaway budget guard, undo-token recording, and a descriptive risk-tier label on every audit row. Works with any kubeconfig-reachable cluster (standard Kubernetes, k3s, EKS, GKE, AKS). Run `k8s-aiops init` for a friendly onboarding wizard that registers your kube contexts as named targets.
